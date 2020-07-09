@@ -43,8 +43,10 @@ int _g_segments_printed;
 static bool target_read(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_blank_check(port_handle_t port, device_type_t dev_type);
 static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_retries);
+static bool target_verify(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_measure_12v(port_handle_t port);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
+static bool work_verify(port_handle_t port, device_type_t dev_type, const char *filename, bool *matches);
 static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
 static void print_progress_outline();
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
                 else if (!_stricmp(optarg, "write"))
                     operation = Write;
                 else if (!_stricmp(optarg, "verify"))
-                    operation = Write;
+                    operation = Verify;
                 else if (!_stricmp(optarg, "blankcheck"))
                     operation = BlankCheck;
                 else if (!_stricmp(optarg, "measure12v"))
@@ -189,7 +191,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if (operation == Read)
+    if (operation == Read || operation == Write || operation == Verify)
     {
         if (!filename)
         {
@@ -233,6 +235,9 @@ int main(int argc, char *argv[])
         case BlankCheck:
             operation_result = target_blank_check(port, dev_type);
             break;
+        case Verify:
+            operation_result = target_verify(port, dev_type, filename);
+            break;
         case Write:
             operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, num_retries);
             break;
@@ -262,13 +267,13 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
     if (!target_measure_12v(port))
         return false;
 
-    printf("Reading target device...\r\n\r\n");
+    printf("Reading device...\r\n\r\n");
 
     read_buffer = malloc(dev_size);
 
     print_progress_outline();
 
-    if (!pgm_read(port, dev_type, read_buffer, &print_progress, NULL))
+    if (!pgm_read(port, dev_type, read_buffer, NULL, &print_progress, NULL))
     {
         print_target_error();
         success = false;
@@ -319,6 +324,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 {
     bool success = false;
     bool blank;
+    bool matches;
     uint8_t *write_buffer = NULL;
     write_result_t write_result;
     FILE *input_file;
@@ -365,7 +371,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         }
     }
 
-    printf("Writing target device...\r\n\r\n");
+    printf("Writing device...\r\n\r\n");
 
     if (hit_till_set)
         num_passes = 1;
@@ -374,7 +380,8 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 
     for (int pass = 0; pass < num_passes; pass++)
     {
-        print_passes(pass + 1, num_passes);
+        if (!hit_till_set)
+            print_passes(pass + 1, num_passes);
 
         if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_retries, &write_result, &print_progress, NULL))
         {
@@ -384,11 +391,22 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         }
     }
 
-    printf("\r\n\r\nWrite successful.\r\n");
+    if (verify)
+    {
+        printf("\r\n\r\n");
+        if (!work_verify(port, dev_type, filename, &matches))
+        {
+            success = false;
+            goto out;
+        }
+    }
+
+    if (!verify)
+        printf("\r\n\r\nWrite successful.\r\n");
 
     if (hit_till_set)
     {
-        printf("Maximum number of retries on a single byte: %u\r\n", write_result.max_writes_per_byte);
+        printf("\r\nMaximum number of retries on a single byte: %u\r\n", write_result.max_writes_per_byte);
         printf("Total number of writes across entire device: %u\r\n", write_result.total_writes);
     }
 
@@ -400,6 +418,27 @@ out:
         free(write_buffer);
     return success;
 }
+
+static bool target_verify(port_handle_t port, device_type_t dev_type, const char *filename)
+{
+    bool success = false;
+
+    if (!target_measure_12v(port))
+        return false;
+
+    if (!work_verify(port, dev_type, filename, NULL))
+    {
+        success = false;
+        goto out;
+    }
+
+    success = true;
+
+out:
+    pgm_reset(port);
+    return success;
+}
+
 
 static bool target_measure_12v(port_handle_t port)
 {
@@ -417,16 +456,81 @@ static bool target_measure_12v(port_handle_t port)
         return false;
     }
 
-    printf("\r\nTarget supply voltage: %.2f V (OK)\r\n", measured_voltage);
+    printf("\r\nTarget supply voltage: %.2f V (OK)\r\n\r\n", measured_voltage);
 
     return true;
+}
+
+static bool work_verify(port_handle_t port, device_type_t dev_type, const char *filename, bool *matches)
+{
+    bool success = false;
+    uint8_t *input_buffer = NULL;
+    verify_result_t verify_result;
+    FILE *input_file;
+    int dev_size = pgm_get_dev_size(dev_type);
+    int file_size;
+
+    if (fopen_s(&input_file, filename, "rb"))
+    {
+        fprintf(stderr, "\r\nFailed to open input file for reading.\r\n");
+        return false;
+    }
+
+    fseek(input_file, 0, SEEK_END);
+    file_size = ftell(input_file);
+    fseek(input_file, 0, SEEK_SET);
+
+    input_buffer = malloc(file_size);
+
+    fread(input_buffer, sizeof(byte), file_size, input_file);
+    fclose(input_file);
+
+    if (file_size > dev_size)
+    {
+        fprintf(stderr, "\r\nInput file is larger than device.\r\n");
+        *matches = false;
+        success = true;
+        goto out;
+    }
+
+    printf("Verifying device...\r\n\r\n");
+
+    print_progress_outline();
+
+    if (!pgm_read(port, dev_type, input_buffer, &verify_result, &print_progress, NULL))
+    {
+        print_target_error();
+        success = false;
+        goto out;
+    }
+
+    if (!verify_result.matches)
+    {
+        fprintf(stderr, "\r\n\r\nVerify failed at 0x%04X. File=0x%02X Device=0x%02X\r\n", verify_result.offset, verify_result.file, verify_result.device);
+        if (matches)
+            *matches = false;
+        success = true;
+        goto out;
+    }
+
+    printf("\r\n\r\nVerify successful.\r\n");
+    success = true;
+
+    if (matches)
+        *matches = true;
+
+out:
+    pgm_reset(port);
+    if (input_buffer)
+        free(input_buffer);
+    return success;
 }
 
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank)
 {
     blank_check_result_t blank_check;
 
-    printf("Blank checking target device...\r\n");
+    printf("Blank checking device...\r\n");
 
     if (!pgm_blank_check(port, dev_type, &blank_check, NULL))
     {
@@ -435,9 +539,9 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
     }
 
     if (blank_check.blank)
-        printf("Device is blank.\r\n");
+        printf("\r\nDevice is blank.\r\n\r\n");
     else
-        printf("Device not blank. Offset = 0x%04X Data = 0x%02X\r\n", blank_check.offset, blank_check.data);
+        printf("\r\nDevice not blank. Offset = 0x%04X Data = 0x%02X\r\n", blank_check.offset, blank_check.data);
 
     if (blank)
         *blank = blank_check.blank;
@@ -479,7 +583,7 @@ static void print_progress(int pct)
 
 static void print_target_error(void)
 {
-    fprintf(stderr, "\r\nOperation failed: ");
+    fprintf(stderr, "\r\n\r\nOperation failed: ");
 
     switch (_g_last_error)
     {
@@ -505,7 +609,7 @@ static void print_target_error(void)
         fprintf(stderr, "The selection switch on the target is not in the correct position for this device");
         break;
     case PGM_ERR_MAX_RETRIES_EXCEEDED:
-        fprintf(stderr, "The maximum number of attempt to write a byte to the target device was exceeded");
+        fprintf(stderr, "The maximum number of attempt to write a byte to the device was exceeded");
         break;
     }
 

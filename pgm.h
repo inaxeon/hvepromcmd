@@ -67,8 +67,16 @@ typedef struct
     uint32_t total_writes;
 } write_result_t;
 
+typedef struct
+{
+    bool matches;
+    int offset;
+    uint8_t file;
+    uint8_t device;
+} verify_result_t;
+
 bool pgm_check_supply_voltage(port_handle_t port, float *measured_voltage);
-bool pgm_read(port_handle_t port, device_type_t device_type, uint8_t *buffer, void(*pct_callback)(int pct), void(*ds_callback)(void));
+bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, verify_result_t *verify_result, void(*pct_callback)(int pct), void(*ds_callback)(void));
 bool pgm_blank_check(port_handle_t port, device_type_t dev_type, blank_check_result_t *blank_check, void(*ds_callback)(void));
 bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int pass, int num_passes, bool hit_till_set,
     uint8_t num_retries, write_result_t *write_result, void(*pct_callback)(int pct), void(*ds_callback)(void));

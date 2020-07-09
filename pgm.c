@@ -60,7 +60,7 @@ bool pgm_check_supply_voltage(port_handle_t port, float *measured_voltage)
     return true;
 }
 
-bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, void (*pct_callback)(int pct), void (*ds_callback)(void))
+bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, verify_result_t *verify_result, void (*pct_callback)(int pct), void (*ds_callback)(void))
 {
     uint8_t write_buffer[3];
     int total_size = pgm_get_dev_size(dev_type);
@@ -87,6 +87,8 @@ bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, void 
 
     while (bytes_read < total_size)
     {
+        uint8_t verify_buffer[READ_CHUNK_SIZE];
+
         int this_read;
 
         write_buffer[0] = CMD_READ_CHUNK;
@@ -100,8 +102,25 @@ bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, void 
 
         this_read = (total_size - bytes_read) > READ_CHUNK_SIZE ? READ_CHUNK_SIZE : (total_size - bytes_read);
 
-        if (!serial_read(port, buffer + bytes_read, this_read))
+        if (!serial_read(port, verify_result ? verify_buffer : (buffer + bytes_read), this_read))
             return false;
+
+        if (verify_result)
+        {
+            for (int i = 0; i < this_read; i++)
+            {
+                uint8_t *input_buffer = (buffer + bytes_read);
+                if (input_buffer[i] != verify_buffer[i])
+                {
+                    verify_result->matches = false;
+                    verify_result->offset = bytes_read + i;
+                    verify_result->file = input_buffer[i];
+                    verify_result->device = verify_buffer[i];
+
+                    return true;
+                }
+            }
+        }
 
         bytes_read += this_read;
 
@@ -114,6 +133,9 @@ bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, void 
         _g_last_error = PGM_ERR_BADACK;
         return false;
     }
+
+    if (verify_result)
+        verify_result->matches = true;
 
     return true;
 }
