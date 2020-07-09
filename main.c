@@ -561,11 +561,7 @@ static void print_progress_outline()
 {
     _g_segments_printed = 0;
 
-    printf("\033[%dC", PROGRESS_BAR_SEGMENTS + 1);
-
-    putc(']', stdout);
-    putc('\r', stdout);
-    putc('[', stdout);
+    printf("\033[%dC]\r[", PROGRESS_BAR_SEGMENTS + 1);
 }
 
 static void print_passes(int pass, int num_passes)

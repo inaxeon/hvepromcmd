@@ -88,7 +88,6 @@ bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, verif
     while (bytes_read < total_size)
     {
         uint8_t verify_buffer[READ_CHUNK_SIZE];
-
         int this_read;
 
         write_buffer[0] = CMD_READ_CHUNK;
@@ -116,7 +115,7 @@ bool pgm_read(port_handle_t port, device_type_t dev_type, uint8_t *buffer, verif
                     verify_result->offset = bytes_read + i;
                     verify_result->file = input_buffer[i];
                     verify_result->device = verify_buffer[i];
-
+                    
                     return true;
                 }
             }
