@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     char *filename = NULL;
     operation_t operation = None;
     device_type_t dev_type;
-    port_handle_t port;
+    port_handle_t port = NULL;
 
     _g_last_error = PGM_ERR_OK;
 
@@ -156,39 +156,38 @@ int main(int argc, char *argv[])
     if (baud != 9600 && baud != 38400 && baud != 115200)
     {
         fprintf(stderr, "\r\nInvalid baud rate. Must be 9600, 38400 or 115200\r\n");
-        return EXIT_FAILURE;
+        operation_result = false;
+        goto out;
     }
 
     if (port_name[0] == 0)
     {
         fprintf(stderr, "\r\nNo serial port specified.\r\n");
-        return EXIT_FAILURE;
+        operation_result = false;
+        goto out;
     }
 
 #ifdef _WIN32
     if (strncmp(port_name, "COM", 3))
     {
         fprintf(stderr, "\r\nInvalid serial port format.\r\n");
-        return EXIT_FAILURE;
+        operation_result = false;
+        goto out;
     }
 #endif
-
-    if (!serial_open(port_name, baud, &port))
-    {
-        fprintf(stderr, "\r\nFailed to open serial port.\r\n");
-        return EXIT_FAILURE;
-    }
 
     if (operation == None)
     {
         fprintf(stderr, "\r\nNo operation specified.\r\n");
-        return EXIT_FAILURE;
+        operation_result = false;
+        goto out;
     }
 
     if (dev_type == NotSet)
     {
         fprintf(stderr, "\r\nNo device type specified.\r\n");
-        return EXIT_FAILURE;
+        operation_result = false;
+        goto out;
     }
 
     if (operation == Read || operation == Write || operation == Verify)
@@ -196,8 +195,16 @@ int main(int argc, char *argv[])
         if (!filename)
         {
             fprintf(stderr, "\r\nNo filename specified.\r\n");
-            return EXIT_FAILURE;
+            operation_result = false;
+            goto out;
         }
+    }
+
+    if (!serial_open(port_name, baud, &port))
+    {
+        fprintf(stderr, "\r\nFailed to open serial port.\r\n");
+        operation_result = false;
+        goto out;
     }
     
     switch (dev_type)
@@ -246,6 +253,7 @@ int main(int argc, char *argv[])
             break;
     }
 
+out:
     serial_close(port);
 
     if (filename)

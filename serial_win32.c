@@ -39,6 +39,8 @@ bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
 
     port = CreateFile(port_buffer, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
+    *port_handle = (port_handle_t)port;
+
     if (port == INVALID_HANDLE_VALUE)
         return false;
 
@@ -93,13 +95,13 @@ bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
 
     PurgeComm(port, PURGE_RXCLEAR | PURGE_TXCLEAR);
 
-    *port_handle = (port_handle_t)port;
     return true;
 }
 
 void serial_close(port_handle_t port)
 {
-    CloseHandle((HANDLE)port);
+    if (port != INVALID_HANDLE_VALUE)
+        CloseHandle((HANDLE)port);
 }
 
 bool serial_write(port_handle_t port, uint8_t *buffer, int count)
