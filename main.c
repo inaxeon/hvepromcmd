@@ -46,6 +46,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 static bool target_measure_12v(port_handle_t port);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
 static void print_progress(int pct);
+static void print_passes(int pass, int num_passes);
 static void print_progress_outline();
 static void print_target_error(void);
 
@@ -373,6 +374,8 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 
     for (int pass = 0; pass < num_passes; pass++)
     {
+        print_passes(pass + 1, num_passes);
+
         if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_retries, &write_result, &print_progress, NULL))
         {
             print_target_error();
@@ -446,11 +449,20 @@ static void print_progress_outline()
 {
     _g_segments_printed = 0;
 
-    for (int i = 0; i <= PROGRESS_BAR_SEGMENTS; i++)
-        putc(' ', stdout);
+    printf("\033[%dC", PROGRESS_BAR_SEGMENTS + 1);
+
     putc(']', stdout);
     putc('\r', stdout);
     putc('[', stdout);
+}
+
+static void print_passes(int pass, int num_passes)
+{
+    int offset = PROGRESS_BAR_SEGMENTS - _g_segments_printed + 2;
+    int passlen;
+    printf("\033[%dC", offset);
+    passlen = printf("%d/%d", pass, num_passes);
+    printf("\033[%dD", offset + passlen);
 }
 
 static void print_progress(int pct)

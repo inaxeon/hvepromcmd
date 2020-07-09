@@ -169,21 +169,21 @@ bool pgm_blank_check(port_handle_t port, device_type_t dev_type, blank_check_res
 bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int pass, int num_passes, bool hit_till_set,
     uint8_t num_retries, write_result_t *write_result, void (*pct_callback)(int pct), void (*ds_callback)(void))
 {
-    uint8_t write_buffer[5 + (WRITE_CHUNK_SIZE - 3)];
+    uint8_t cmd_buffer[5];
     uint8_t read_buffer[5];
     int total_size = pgm_get_dev_size(dev_type);
     int bytes_written = 0;
 
-    write_buffer[0] = CMD_START_WRITE;
-    write_buffer[1] = ~CMD_START_WRITE;
-    write_buffer[2] = (uint8_t)dev_type;
-    write_buffer[3] = hit_till_set ? 0x01 : 0x00;
-    write_buffer[4] = num_retries;
+    cmd_buffer[0] = CMD_START_WRITE;
+    cmd_buffer[1] = ~CMD_START_WRITE;
+    cmd_buffer[2] = (uint8_t)dev_type;
+    cmd_buffer[3] = hit_till_set ? 0x01 : 0x00;
+    cmd_buffer[4] = num_retries;
 
     if (pct_callback)
         pct_callback(0);
 
-    if (!serial_write(port, write_buffer, 5))
+    if (!serial_write(port, cmd_buffer, 5))
         return false;
 
     if (!check_return_code(port, CMD_START_WRITE))
@@ -197,6 +197,7 @@ bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int 
 
     while (bytes_written < total_size)
     {
+        uint8_t write_buffer[2 + WRITE_CHUNK_SIZE];
         int this_write;
 
         write_buffer[0] = CMD_WRITE_CHUNK;
@@ -215,7 +216,7 @@ bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int 
         bytes_written += this_write;
 
         if (pct_callback)
-            pct_callback(((pass * 100) / num_passes) + (((bytes_written * 100) / total_size) / num_passes));
+            pct_callback((((pass * 10000) / num_passes) + (((bytes_written * 10000) / total_size) / num_passes)) / 100);
     }
 
     if (_g_last_error != PGM_ERR_COMPLETE)
@@ -230,6 +231,8 @@ bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int 
     // Only non-zero when hit_till_set = 1
     write_result->max_writes_per_byte = read_buffer[0];
     write_result->total_writes = MAKE_U32(read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
+
+    return true;
 }
 
 bool pgm_reset(port_handle_t port)
