@@ -44,7 +44,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
 static bool target_blank_check(port_handle_t port, device_type_t dev_type);
 static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_retries);
 static bool target_verify(port_handle_t port, device_type_t dev_type, const char *filename);
-static bool target_measure_12v(port_handle_t port);
+static bool target_measure_12v(port_handle_t port, device_type_t dev_type);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
 static bool work_verify(port_handle_t port, device_type_t dev_type, const char *filename, bool *matches);
 static void print_progress(int pct);
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
             operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, num_retries);
             break;
         case Measure12V:
-            operation_result = target_measure_12v(port);
+            operation_result = target_measure_12v(port, dev_type);
             break;
     }
 
@@ -264,7 +264,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
     FILE *output_file;
     int dev_size = pgm_get_dev_size(dev_type);
 
-    if (!target_measure_12v(port))
+    if (!target_measure_12v(port, dev_type))
         return false;
 
     printf("Reading device...\r\n\r\n");
@@ -304,7 +304,7 @@ static bool target_blank_check(port_handle_t port, device_type_t dev_type)
 {
     bool success = false;
 
-    if (!target_measure_12v(port))
+    if (!target_measure_12v(port, dev_type))
         return false;
 
     if (!work_blank_check(port, dev_type, NULL))
@@ -353,7 +353,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         goto out;
     }
 
-    if (!target_measure_12v(port))
+    if (!target_measure_12v(port, dev_type))
         return false;
 
     if (blank_check)
@@ -423,7 +423,7 @@ static bool target_verify(port_handle_t port, device_type_t dev_type, const char
 {
     bool success = false;
 
-    if (!target_measure_12v(port))
+    if (!target_measure_12v(port, dev_type))
         return false;
 
     if (!work_verify(port, dev_type, filename, NULL))
@@ -439,8 +439,7 @@ out:
     return success;
 }
 
-
-static bool target_measure_12v(port_handle_t port)
+static bool target_measure_12v(port_handle_t port, device_type_t dev_type)
 {
     float measured_voltage;
 
@@ -450,9 +449,18 @@ static bool target_measure_12v(port_handle_t port)
         return false;
     }
 
+    if (dev_type == C2704 || dev_type == C2708)
+    {
+        if (measured_voltage < 12.0 || measured_voltage >= 13.0)
+        {
+            fprintf(stderr, "\r\nSupply voltage is out of range for this device type.\r\n\r\nVin=%.2fV Min=12.00V Max=13.00V\r\n", measured_voltage);
+            return false;
+        }
+    }
+
     if (measured_voltage < 10.0 || measured_voltage >= 14.0)
     {
-        fprintf(stderr, "\r\nProgrammer host must be connected to a 12V supply\r\n\r\nVin=%.2fV Min=10.00V Max=14.00V\r\n", measured_voltage);
+        fprintf(stderr, "\r\nProgrammer host must be connected to a 12V supply.\r\n\r\nVin=%.2fV Min=10.00V Max=14.00V\r\n", measured_voltage);
         return false;
     }
 
