@@ -143,8 +143,6 @@ bool pgm_blank_check(port_handle_t port, device_type_t dev_type, blank_check_res
 {
     uint8_t write_buffer[3];
     uint8_t read_buffer[3];
-    int total_size = pgm_get_dev_size(dev_type);
-    int bytes_read = 0;
 
     write_buffer[0] = CMD_START_BLANK_CHECK;
     write_buffer[1] = ~CMD_START_BLANK_CHECK;
@@ -313,7 +311,7 @@ int pgm_get_dev_size(device_type_t device_type)
         return 0x400;
     case MCM6876X:
         return 0x2000;
+    default:
+        return -1;
     }
-    
-    return -1;
 }

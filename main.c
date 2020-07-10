@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     char port_name[32];
     char *filename = NULL;
     operation_t operation = None;
-    device_type_t dev_type;
+    device_type_t dev_type = NotSet;
     port_handle_t port = NULL;
 
     _g_last_error = PGM_ERR_OK;
@@ -105,7 +105,9 @@ int main(int argc, char *argv[])
             case 'p':
             {
                 strcpy_s(port_name, sizeof(port_name), optarg);
+#ifdef _WIN32
                 _strupr_s(port_name, sizeof(port_name));
+#endif
                 break;
             }
             case 'b':
@@ -176,20 +178,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    if (operation == None)
-    {
-        fprintf(stderr, "\r\nNo operation specified.\r\n");
-        operation_result = false;
-        goto out;
-    }
-
-    if (dev_type == NotSet)
-    {
-        fprintf(stderr, "\r\nNo device type specified.\r\n");
-        operation_result = false;
-        goto out;
-    }
-
     if (operation == Read || operation == Write || operation == Verify)
     {
         if (!filename)
@@ -232,6 +220,12 @@ int main(int argc, char *argv[])
                 num_retries = 5;
             break;
         }
+        default:
+        {
+            fprintf(stderr, "\r\nNo device type specified.\r\n");
+            operation_result = false;
+            goto out;
+        }
     }
 
     switch (operation)
@@ -251,6 +245,10 @@ int main(int argc, char *argv[])
         case Measure12V:
             operation_result = target_measure_12v(port, dev_type);
             break;
+        default:
+            fprintf(stderr, "\r\nNo operation specified.\r\n");
+            operation_result = false;
+            goto out;
     }
 
 out:
@@ -290,14 +288,18 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
 
     printf("\r\n\r\nRead successful.\r\n");
 
+#ifdef _WIN32
     if (fopen_s(&output_file, filename, "wb"))
+#else
+    if (!(output_file = fopen(filename, "wb")))
+#endif
     {
         fprintf(stderr, "\r\nFailed to open output file for writing.\r\n");
         success = false;
         goto out;
     }
 
-    fwrite(read_buffer, sizeof(byte), dev_size, output_file);
+    fwrite(read_buffer, sizeof(uint8_t), dev_size, output_file);
     fclose(output_file);
     success = true;
 
@@ -337,9 +339,14 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     write_result_t write_result;
     FILE *input_file;
     int file_size;
+    int file_read;
     int dev_size = pgm_get_dev_size(dev_type);
 
+#ifdef _WIN32
     if (fopen_s(&input_file, filename, "rb"))
+#else
+    if (!(input_file = fopen(filename, "rb")))
+#endif
     {
         fprintf(stderr, "\r\nFailed to open input file for reading.\r\n");
         return false;
@@ -351,8 +358,15 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 
     write_buffer = malloc(file_size);
 
-    fread(write_buffer, sizeof(byte), file_size, input_file);
+    file_read = fread(write_buffer, sizeof(uint8_t), file_size, input_file);
     fclose(input_file);
+
+    if (file_read != file_size)
+    {
+        fprintf(stderr, "\r\nFailed to read all of input file.\r\n");
+        success = false;
+        goto out;
+    }
 
     if (file_size > dev_size)
     {
@@ -485,8 +499,13 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
     FILE *input_file;
     int dev_size = pgm_get_dev_size(dev_type);
     int file_size;
+    int file_read;
 
+#ifdef _WIN32
     if (fopen_s(&input_file, filename, "rb"))
+#else
+    if (!(input_file = fopen(filename, "rb")))
+#endif
     {
         fprintf(stderr, "\r\nFailed to open input file for reading.\r\n");
         return false;
@@ -498,14 +517,22 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
 
     input_buffer = malloc(file_size);
 
-    fread(input_buffer, sizeof(byte), file_size, input_file);
+    file_read = fread(input_buffer, sizeof(uint8_t), file_size, input_file);
     fclose(input_file);
+
+    if (file_read != file_size)
+    {
+        fprintf(stderr, "\r\nFailed to read all of input file.\r\n");
+        *matches = false;
+        success = false;
+        goto out;
+    }
 
     if (file_size > dev_size)
     {
         fprintf(stderr, "\r\nInput file is larger than device.\r\n");
         *matches = false;
-        success = true;
+        success = false;
         goto out;
     }
 

@@ -21,4 +21,10 @@
 
 extern int _g_last_error;
 
+#ifndef _WIN32
+#define _stricmp strcasecmp
+#define _strdup strdup
+#define strcpy_s(dst, sz, src) strcpy(dst, src)
+#endif
+
 #endif /* __PROJECT_H__ */

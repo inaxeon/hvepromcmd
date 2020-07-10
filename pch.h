@@ -9,9 +9,14 @@
 #ifndef PCH_H
 #define PCH_H
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 
 #endif //PCH_H
