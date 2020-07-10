@@ -1,5 +1,5 @@
 /*
- *   File:   serial_win32.c
+ *   File:   serial_posix.c
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
  *   1702A/270x/MCM6876x/MCS48 Programmer
