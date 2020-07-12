@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     memset(port_name, 0, sizeof(port_name));
 
-    while ((opt = getopt(argc, argv, "o:p:b:d:f:n:r:mcv?")) != -1)
+    while ((opt = getopt(argc, argv, "o:p:u:d:f:n:r:mbv?")) != -1)
     {
         switch (opt)
         {
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 #endif
                 break;
             }
-            case 'b':
+            case 'u':
             {
                 baud = atoi(optarg);
                 break;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
                 hit_until_set = false;
                 break;
             }
-            case 'c':
+            case 'b':
             {
                 blank_check = true;
                 break;
@@ -190,7 +190,11 @@ int main(int argc, char *argv[])
 
     if (!serial_open(port_name, baud, &port))
     {
+#ifdef _WIN32
         fprintf(stderr, "\r\nFailed to open serial port.\r\n\r\n");
+#else
+        fprintf(stderr, "\r\nFailed to open serial port (%s).\r\n\r\n", strerror(errno));
+#endif
         operation_result = false;
         goto out;
     }
@@ -584,7 +588,7 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
     if (blank_check.blank)
         printf("\r\nDevice is blank.\r\n\r\n");
     else
-        printf("\r\nDevice not blank. Offset = 0x%04X Data = 0x%02X\r\n", blank_check.offset, blank_check.data);
+        printf("\r\nDevice not blank. Offset = 0x%04X Data = 0x%02X\r\n\r\n", blank_check.offset, blank_check.data);
 
     if (blank)
         *blank = blank_check.blank;

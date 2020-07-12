@@ -131,17 +131,15 @@ bool serial_read(port_handle_t port, uint8_t *buffer, int count)
         FD_SET(fd, &rfds);
 
         nfds = select(fd + 1, &rfds, NULL, NULL, &timeout);
-        if (nfds == 0) {
+
+        if (nfds == 0 || nfds == -1)
             break;
-        }
-        else if (nfds == -1) {
-            break;
-        }
 
         rc = read(fd, buffer, count - num_bytes_read);
-        if (rc < 0) {
+
+        if (rc < 0)
             break;
-        }
+            
         buffer += rc;
         num_bytes_read += rc;
     }
