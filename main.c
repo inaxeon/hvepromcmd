@@ -286,7 +286,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
         goto out;
     }
 
-    printf("\r\n\r\nRead successful.\r\n");
+    printf("\r\n\r\nRead successful.\r\n\r\n");
 
 #ifdef _WIN32
     if (fopen_s(&output_file, filename, "wb"))
@@ -424,12 +424,12 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     }
 
     if (!verify)
-        printf("\r\n\r\nWrite successful.\r\n");
+        printf("\r\n\r\nWrite successful.\r\n\r\n");
 
     if (hit_till_set)
     {
-        printf("\r\nMaximum number of retries on a single byte: %u\r\n", write_result.max_writes_per_byte);
-        printf("Total number of writes across entire device: %u\r\n", write_result.total_writes);
+        printf("Maximum number of retries on a single byte: %u\r\n", write_result.max_writes_per_byte);
+        printf("Total number of writes across entire device: %u\r\n\r\n", write_result.total_writes);
     }
 
     success = true;
@@ -556,7 +556,7 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
         goto out;
     }
 
-    printf("\r\n\r\nVerify successful.\r\n");
+    printf("\r\n\r\nVerify successful.\r\n\r\n");
     success = true;
 
     if (matches)
@@ -606,6 +606,7 @@ static void print_passes(int pass, int num_passes)
     printf("\033[%dC", offset);
     passlen = printf("%d/%d", pass, num_passes);
     printf("\033[%dD", offset + passlen);
+    fflush(stdout);
 }
 
 static void print_progress(int pct)
@@ -618,6 +619,7 @@ static void print_progress(int pct)
             fputc('=', stdout);
         _g_segments_printed += segments_to_print;
     }
+    fflush(stdout);
 }
 
 static void print_target_error(void)
@@ -627,30 +629,33 @@ static void print_target_error(void)
     switch (_g_last_error)
     {
     case PGM_ERR_BADACK:
-        fprintf(stderr, "A protocol error occurred communicating with the target");
+        fprintf(stderr, "A protocol error occurred communicating with the target.");
         break;
     case PGM_ERR_TIMEOUT:
-        fprintf(stderr, "Timed out attempting to communicate with the target");
+        fprintf(stderr, "Timed out attempting to communicate with the target.");
         break;
     case PGM_ERR_INVALID_COMMAND:
-        fprintf(stderr, "The target does not support this command");
+        fprintf(stderr, "The target does not support this command.");
         break;
     case PGM_ERR_NOTSUPPORTED:
-        fprintf(stderr, "The target does not support this device");
+        fprintf(stderr, "The target does not support this device.");
         break;
     case PGM_ERR_NO_HARDWARE:
-        fprintf(stderr, "No shield is attached to the target");
+        fprintf(stderr, "No shield is attached to the target.");
         break;
     case PGM_ERR_INCORRECT_HARDWARE:
-        fprintf(stderr, "The shield attached to the target does not support this device");
+        fprintf(stderr, "The shield attached to the target does not support this device.");
         break;
     case PGM_ERR_INCORRECT_SWITCH_POSITION:
-        fprintf(stderr, "The selection switch on the target is not in the correct position for this device");
+        fprintf(stderr, "The selection switch on the target is not in the correct position for this device.");
         break;
     case PGM_ERR_MAX_RETRIES_EXCEEDED:
-        fprintf(stderr, "The maximum number of attempt to write a byte to the device was exceeded");
+        fprintf(stderr, "The maximum number of attempt to write a byte to the device was exceeded.");
+        break;
+    default:
+        fprintf(stderr, "An error ocurred. Error code not set.");
         break;
     }
 
-    fprintf(stderr, "\r\n");
+    fprintf(stderr, "\r\n\r\n");
 }

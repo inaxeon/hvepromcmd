@@ -97,10 +97,9 @@ bool serial_write(port_handle_t port, uint8_t *buffer, int count)
     int fd = (int)port;
     int num_bytes_written = 0;
 
-    while (count)
+    while (num_bytes_written < count)
     {
         int rc = write(fd, buffer, count);
-
         if (rc < 0)
             break;
 
@@ -109,10 +108,7 @@ bool serial_write(port_handle_t port, uint8_t *buffer, int count)
     }
 
     if (num_bytes_written < count)
-    {
-        _g_last_error = PGM_ERR_TIMEOUT;
         return false;
-    }
 
     return true;
 }
@@ -136,15 +132,15 @@ bool serial_read(port_handle_t port, uint8_t *buffer, int count)
 
         nfds = select(fd + 1, &rfds, NULL, NULL, &timeout);
         if (nfds == 0) {
-            return false;
+            break;
         }
         else if (nfds == -1) {
-            return false;
+            break;
         }
 
         rc = read(fd, buffer, count - num_bytes_read);
         if (rc < 0) {
-            return false;
+            break;
         }
         buffer += rc;
         num_bytes_read += rc;
