@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     char *filename = NULL;
     operation_t operation = None;
     device_type_t dev_type = NotSet;
-    port_handle_t port = NULL;
+    port_handle_t port = DEFAULT_PORT_HANDLE;
 
     _g_last_error = PGM_ERR_OK;
 
@@ -157,14 +157,14 @@ int main(int argc, char *argv[])
 
     if (baud != 9600 && baud != 38400 && baud != 115200)
     {
-        fprintf(stderr, "\r\nInvalid baud rate. Must be 9600, 38400 or 115200\r\n");
+        fprintf(stderr, "\r\nInvalid baud rate. Must be 9600, 38400 or 115200\r\n\r\n");
         operation_result = false;
         goto out;
     }
 
     if (port_name[0] == 0)
     {
-        fprintf(stderr, "\r\nNo serial port specified.\r\n");
+        fprintf(stderr, "\r\nNo serial port specified.\r\n\r\n");
         operation_result = false;
         goto out;
     }
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
     if (strncmp(port_name, "COM", 3))
     {
-        fprintf(stderr, "\r\nInvalid serial port format.\r\n");
+        fprintf(stderr, "\r\nInvalid serial port format.\r\n\r\n");
         operation_result = false;
         goto out;
     }
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
     {
         if (!filename)
         {
-            fprintf(stderr, "\r\nNo filename specified.\r\n");
+            fprintf(stderr, "\r\nNo filename specified.\r\n\r\n");
             operation_result = false;
             goto out;
         }
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 
     if (!serial_open(port_name, baud, &port))
     {
-        fprintf(stderr, "\r\nFailed to open serial port.\r\n");
+        fprintf(stderr, "\r\nFailed to open serial port.\r\n\r\n");
         operation_result = false;
         goto out;
     }
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
         }
         default:
         {
-            fprintf(stderr, "\r\nNo device type specified.\r\n");
+            fprintf(stderr, "\r\nNo device type specified.\r\n\r\n");
             operation_result = false;
             goto out;
         }
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
             operation_result = target_measure_12v(port, dev_type);
             break;
         default:
-            fprintf(stderr, "\r\nNo operation specified.\r\n");
+            fprintf(stderr, "\r\nNo operation specified.\r\n\r\n");
             operation_result = false;
             goto out;
     }
@@ -473,7 +473,7 @@ static bool target_measure_12v(port_handle_t port, device_type_t dev_type)
 
     if (dev_type == C2704 || dev_type == C2708)
     {
-        if (measured_voltage < 12.0 || measured_voltage >= 13.0)
+        if (measured_voltage < 11.0 || measured_voltage >= 13.0)
         {
             fprintf(stderr, "\r\nSupply voltage is out of range for this device type.\r\n\r\nVin=%.2fV Min=12.00V Max=13.00V\r\n", measured_voltage);
             return false;

@@ -32,7 +32,6 @@ bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
     struct termios termios;
     fd = open(port_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
-    fprintf(stdout, "fd: %d\r\n", fd);
     *port_handle = (port_handle_t)fd;
 
     if (fd < 0)
@@ -96,18 +95,26 @@ void serial_close(port_handle_t port)
 bool serial_write(port_handle_t port, uint8_t *buffer, int count)
 {
     int fd = (int)port;
+    int num_bytes_written = 0;
 
     while (count)
     {
         int rc = write(fd, buffer, count);
 
         if (rc < 0)
-            return false;
+            break;
 
         buffer += rc;
+        num_bytes_written += rc;
     }
 
-    return false;
+    if (num_bytes_written < count)
+    {
+        _g_last_error = PGM_ERR_TIMEOUT;
+        return false;
+    }
+
+    return true;
 }
 
 bool serial_read(port_handle_t port, uint8_t *buffer, int count)
@@ -117,12 +124,12 @@ bool serial_read(port_handle_t port, uint8_t *buffer, int count)
     int nfds;
     int fd = (int)port;
     int rc;
-    size_t len = 0;
+    size_t num_bytes_read = 0;
 
     timeout.tv_sec = 3;
     timeout.tv_usec = 0;
 
-    while (len < count)
+    while (num_bytes_read < count)
     {
         FD_ZERO(&rfds);
         FD_SET(fd, &rfds);
@@ -135,12 +142,18 @@ bool serial_read(port_handle_t port, uint8_t *buffer, int count)
             return false;
         }
 
-        rc = read(fd, buffer, count - len);
+        rc = read(fd, buffer, count - num_bytes_read);
         if (rc < 0) {
             return false;
         }
         buffer += rc;
-        len += rc;
+        num_bytes_read += rc;
+    }
+
+    if (num_bytes_read < count)
+    {
+        _g_last_error = PGM_ERR_TIMEOUT;
+        return false;
     }
 
     return true;

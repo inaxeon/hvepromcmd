@@ -20,7 +20,13 @@
 #ifndef __SERIAL_H__
 #define __SERIAL_H__
 
-typedef void * port_handle_t;
+#ifdef _WIN32
+typedef FILE * port_handle_t;
+#define DEFAULT_PORT_HANDLE NULL
+#else
+typedef int port_handle_t;
+#define DEFAULT_PORT_HANDLE -1
+#endif
 
 bool serial_open(const char *port_name, int baud, port_handle_t *port_handle);
 void serial_close(port_handle_t port);
