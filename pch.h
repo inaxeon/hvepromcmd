@@ -11,6 +11,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
 #endif
 
 #include <stdbool.h>
