@@ -477,7 +477,7 @@ static bool target_measure_12v(port_handle_t port, device_type_t dev_type)
 
     if (dev_type == C2704 || dev_type == C2708)
     {
-        if (measured_voltage < 11.0 || measured_voltage >= 13.0)
+        if (measured_voltage < 11.9 || measured_voltage >= 13.0)
         {
             fprintf(stderr, "\r\nSupply voltage is out of range for this device type.\r\n\r\nVin=%.2fV Min=12.00V Max=13.00V\r\n", measured_voltage);
             return false;
