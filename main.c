@@ -26,6 +26,7 @@
 #include "pgm.h"
 
 #define PROGRESS_BAR_SEGMENTS   58
+#define MCM6876X_DEFAULT_RETRIES    5
 
 typedef enum
 {
@@ -51,6 +52,7 @@ static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
 static void print_progress_outline();
 static void print_target_error(void);
+static void help(const char *progname);
 
 int main(int argc, char *argv[])
 {
@@ -67,6 +69,13 @@ int main(int argc, char *argv[])
     operation_t operation = None;
     device_type_t dev_type = NotSet;
     port_handle_t port = DEFAULT_PORT_HANDLE;
+
+    if (!argv[1] || !strcmp(argv[1], "/?"))
+    {
+        // Can't parse '/' options - but a windows person is likely to do at least this
+        help(argv[0]);
+        return EXIT_FAILURE;
+    }
 
     _g_last_error = PGM_ERR_OK;
 
@@ -145,11 +154,9 @@ int main(int argc, char *argv[])
                 verify = true;
                 break;
             }
-
             default:
             {
-                fprintf(stderr, "\r\nUsage: %s -o operation [options]\r\n\r\n"
-                    , argv[0]);
+                help(argv[0]);
                 return EXIT_FAILURE;
             }
         }
@@ -157,14 +164,14 @@ int main(int argc, char *argv[])
 
     if (baud != 9600 && baud != 38400 && baud != 115200)
     {
-        fprintf(stderr, "\r\nInvalid baud rate. Must be 9600, 38400 or 115200\r\n\r\n");
+        fprintf(stderr, "\r\nInvalid baud rate. Must be 9600, 38400 or 115200\r\n");
         operation_result = false;
         goto out;
     }
 
     if (port_name[0] == 0)
     {
-        fprintf(stderr, "\r\nNo serial port specified.\r\n\r\n");
+        fprintf(stderr, "\r\nNo serial port specified.\r\n");
         operation_result = false;
         goto out;
     }
@@ -172,7 +179,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
     if (strncmp(port_name, "COM", 3))
     {
-        fprintf(stderr, "\r\nInvalid serial port format.\r\n\r\n");
+        fprintf(stderr, "\r\nInvalid serial port format.\r\n");
         operation_result = false;
         goto out;
     }
@@ -182,7 +189,7 @@ int main(int argc, char *argv[])
     {
         if (!filename)
         {
-            fprintf(stderr, "\r\nNo filename specified.\r\n\r\n");
+            fprintf(stderr, "\r\nNo filename specified.\r\n");
             operation_result = false;
             goto out;
         }
@@ -191,9 +198,9 @@ int main(int argc, char *argv[])
     if (!serial_open(port_name, baud, &port))
     {
 #ifdef _WIN32
-        fprintf(stderr, "\r\nFailed to open serial port.\r\n\r\n");
+        fprintf(stderr, "\r\nFailed to open serial port.\r\n");
 #else
-        fprintf(stderr, "\r\nFailed to open serial port (%s).\r\n\r\n", strerror(errno));
+        fprintf(stderr, "\r\nFailed to open serial port (%s).\r\n", strerror(errno));
 #endif
         operation_result = false;
         goto out;
@@ -226,7 +233,7 @@ int main(int argc, char *argv[])
         }
         default:
         {
-            fprintf(stderr, "\r\nNo device type specified.\r\n\r\n");
+            fprintf(stderr, "\r\nNo device type specified.\r\n");
             operation_result = false;
             goto out;
         }
@@ -250,7 +257,7 @@ int main(int argc, char *argv[])
             operation_result = target_measure_12v(port, dev_type);
             break;
         default:
-            fprintf(stderr, "\r\nNo operation specified.\r\n\r\n");
+            fprintf(stderr, "\r\nNo operation specified.\r\n");
             operation_result = false;
             goto out;
     }
@@ -261,10 +268,41 @@ out:
     if (filename)
         free(filename);
 
+#ifndef _WIN32
+    printf("\r\n");
+#endif
+
     if (!operation_result)
         return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
+}
+
+static void help(const char *progname)
+{
+    fprintf(stderr, "\r\nUsage: %s -o operation [options]\r\n\r\n"
+        "Read device to file:\r\n\r\n"
+        "\t%s -o read -p PORT -d DEVICE -f FILE\r\n\r\n"
+#ifdef _WIN32
+        "\tPORT must be in the format COMx\r\n"
+#else
+        "\tPORT must be in the format /dev/ttySx\r\n\r\n"
+#endif
+        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X\r\n\r\n"
+        "Blank check device:\r\n\r\n"
+        "\t%s -o blankcheck -p PORT -d DEVICE\r\n\r\n"
+        "Write device from file:\r\n\r\n"
+        "\t%s -o write -p PORT -d DEVICE -f FILE [-b] [-v] [-r RETRIES] [-m] [-n PASSES]\r\n\r\n"
+        "\tPass '-b' to blank check before write. Pass '-v' to verify device after write.\r\n\r\n"
+        "\tFor MCM68676x each byte is written until it matches the desired value, then written\r\n"
+        "\ta further RETRIES (-r) times. This defaults to %u if RETRIES is not specified.\r\n\r\n"
+        "\tAlso for MCM68676x '-m' can be optionally passed to force the programmer\r\n"
+        "\tto the simpler 'fixed passes' mode for older versions of the chip.\r\n\r\n"
+        "\tFor all device types use '-n' to specify the number of passes.\r\n"
+        "\tManufacturer recommended defaults are used if this option is not specified.\r\n\r\n"
+        "Verify device against file:\r\n\r\n"
+        "\t%s -o verify -p PORT -d DEVICE -f FILE [-b]\r\n\r\n",
+        progname, progname, progname, progname, MCM6876X_DEFAULT_RETRIES, progname);
 }
 
 static bool target_read(port_handle_t port, device_type_t dev_type, const char *filename)
@@ -290,7 +328,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
         goto out;
     }
 
-    printf("\r\n\r\nRead successful.\r\n\r\n");
+    printf("\r\n\r\nRead successful.\r\n");
 
 #ifdef _WIN32
     if (fopen_s(&output_file, filename, "wb"))
@@ -342,8 +380,8 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     uint8_t *write_buffer = NULL;
     write_result_t write_result;
     FILE *input_file;
-    int file_size;
-    int file_read;
+    size_t file_size;
+    size_t file_read;
     int dev_size = pgm_get_dev_size(dev_type);
 
 #ifdef _WIN32
@@ -428,12 +466,12 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     }
 
     if (!verify)
-        printf("\r\n\r\nWrite successful.\r\n\r\n");
+        printf("\r\n\r\nWrite successful.\r\n");
 
     if (hit_till_set)
     {
         printf("Maximum number of retries on a single byte: %u\r\n", write_result.max_writes_per_byte);
-        printf("Total number of writes across entire device: %u\r\n\r\n", write_result.total_writes);
+        printf("Total number of writes across entire device: %u\r\n", write_result.total_writes);
     }
 
     success = true;
@@ -502,8 +540,8 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
     verify_result_t verify_result;
     FILE *input_file;
     int dev_size = pgm_get_dev_size(dev_type);
-    int file_size;
-    int file_read;
+    size_t file_size;
+    size_t file_read;
 
 #ifdef _WIN32
     if (fopen_s(&input_file, filename, "rb"))

@@ -21,7 +21,7 @@
 #define __SERIAL_H__
 
 #ifdef _WIN32
-typedef FILE * port_handle_t;
+typedef HANDLE port_handle_t;
 #define DEFAULT_PORT_HANDLE NULL
 #else
 typedef int port_handle_t;
