@@ -159,6 +159,7 @@
     <ClInclude Include="pgm.h" />
     <ClInclude Include="project.h" />
     <ClInclude Include="serial.h" />
+    <ClInclude Include="test.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="getopt.c" />
