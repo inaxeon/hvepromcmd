@@ -171,6 +171,7 @@
     </ClCompile>
     <ClCompile Include="pgm.c" />
     <ClCompile Include="serial_win32.c" />
+    <ClCompile Include="test_descriptions.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
