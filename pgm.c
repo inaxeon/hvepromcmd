@@ -254,6 +254,47 @@ bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int 
     return true;
 }
 
+bool pgm_test(port_handle_t port, device_type_t dev_type, uint8_t test_index)
+{
+    uint8_t write_buffer[4];
+
+    write_buffer[0] = CMD_TEST;
+    write_buffer[1] = ~CMD_TEST;
+    write_buffer[2] = (uint8_t)dev_type;
+    write_buffer[3] = test_index;
+
+    if (!serial_write(port, write_buffer, 4))
+        return false;
+
+    if (!check_return_code(port, CMD_TEST))
+        return false;
+
+    return true;
+}
+
+bool pgm_test_read(port_handle_t port, device_type_t dev_type, uint8_t *data_read)
+{
+    uint8_t write_buffer[3];
+
+    write_buffer[0] = CMD_TEST_READ;
+    write_buffer[1] = ~CMD_TEST_READ;
+    write_buffer[2] = (uint8_t)dev_type;
+
+    if (!serial_write(port, write_buffer, 3))
+        return false;
+
+    if (!check_return_code(port, CMD_TEST_READ))
+        return false;
+
+    if (_g_last_error == PGM_ERR_OK)
+        return false;
+
+    if (!serial_read(port, data_read, 1))
+        return false;
+
+    return true;
+}
+
 bool pgm_reset(port_handle_t port)
 {
     uint8_t buffer[2];

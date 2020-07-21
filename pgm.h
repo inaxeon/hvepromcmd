@@ -30,7 +30,7 @@
 #define CMD_DEV_RESET                       0x16
 #define CMD_MEASURE_12V                     0x17
 #define CMD_TEST                            0x18
-#define CMD_TESTREAD                        0x19
+#define CMD_TEST_READ                        0x19
 
 #define PGM_ERR_BADACK                      -2
 #define PGM_ERR_TIMEOUT                     -1
@@ -81,6 +81,8 @@ bool pgm_blank_check(port_handle_t port, device_type_t dev_type, blank_check_res
 bool pgm_write(port_handle_t port, device_type_t dev_type, uint8_t *buffer, int pass, int num_passes, bool hit_till_set,
     uint8_t num_retries, write_result_t *write_result, void(*pct_callback)(int pct), void(*ds_callback)(void));
 bool pgm_reset(port_handle_t port);
+bool pgm_test(port_handle_t port, device_type_t dev_type, uint8_t test_index);
+bool pgm_test_read(port_handle_t port, device_type_t dev_type, uint8_t *data_read);
 int pgm_get_dev_size(device_type_t device_type);
 
 #endif /* __PGM_H__ */

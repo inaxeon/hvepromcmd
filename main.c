@@ -64,7 +64,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type);
 static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
 static void print_progress_outline();
-static void print_target_error(void);
+static void print_target_error(bool nl);
 static void help(const char *progname);
 static test_cmd_t get_test_cmd(bool nonblock);
 
@@ -211,7 +211,6 @@ int main(int argc, char *argv[])
         }
     }
 
-#if 0
     if (!serial_open(port_name, baud, &port))
     {
 #ifdef _WIN32
@@ -222,7 +221,6 @@ int main(int argc, char *argv[])
         operation_result = false;
         goto out;
     }
-#endif
     
     switch (dev_type)
     {
@@ -345,7 +343,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
 
     if (!pgm_read(port, dev_type, read_buffer, NULL, &print_progress, NULL))
     {
-        print_target_error();
+        print_target_error(true);
         success = false;
         goto out;
     }
@@ -471,7 +469,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
 
         if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_retries, &write_result, &print_progress, NULL))
         {
-            print_target_error();
+            print_target_error(true);
             success = false;
             goto out;
         }
@@ -531,7 +529,7 @@ static bool target_measure_12v(port_handle_t port, device_type_t dev_type)
 
     if (!pgm_check_supply_voltage(port, &measured_voltage))
     {
-        print_target_error();
+        print_target_error(true);
         return false;
     }
 
@@ -606,7 +604,7 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
 
     if (!pgm_read(port, dev_type, input_buffer, &verify_result, &print_progress, NULL))
     {
-        print_target_error();
+        print_target_error(true);
         success = false;
         goto out;
     }
@@ -641,7 +639,7 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
 
     if (!pgm_blank_check(port, dev_type, &blank_check, NULL))
     {
-        print_target_error();
+        print_target_error(true);
         return false;
     }
 
@@ -658,7 +656,7 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
 
 static bool target_test(port_handle_t port, device_type_t dev_type)
 {
-    test_t *tests;
+    const test_t *tests;
     int testidx;
     int testcnt = 0;
     int testlast = -1;
@@ -668,7 +666,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     switch (dev_type)
     {
         case C1702A:
-            tests = &_g_1702a_tests;
+            tests = _g_1702a_tests;
             break;
         case C2704:
         case C2708:
@@ -681,7 +679,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             return false;
     }
 
-    for (testidx = 0; tests[testidx].cmd; testidx++)
+    for (testidx = 0; tests[testidx].index; testidx++)
         testcnt++;
 
     testidx = 0;
@@ -720,7 +718,13 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                     printf("*** Already at last test ***\r\n");
                     nlflag = true;
                 }
-                run = false;
+
+                if (run)
+                {
+                    run = false;
+                    pgm_reset(port);
+                }
+
                 break;
             }
             case PrevTest:
@@ -735,21 +739,52 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                     nlflag = true;
                 }
 
-                run = false;
+                if (run)
+                {
+                    run = false;
+                    pgm_reset(port);
+                }
+
                 break;
             }
             case StartStop:
             {
-                run = !run;
-            
-                // Inline errors? i.e. incorrect switch / shield
-
-                if (run)
-                    printf("*** Test RUNNING ***\r\n");
+                if (!run)
+                {
+                    if (!pgm_test(port, dev_type, tests[testidx].index))
+                    {
+                        if (nlflag)
+                        {
+                            printf("\r\n");
+                            nlflag = false;
+                        }
+                        print_target_error(false);
+                    }
+                    else
+                    {
+                        printf("*** Test RUNNING ***\r\n");
+                        nlflag = true;
+                        run = true;
+                    }
+                }
                 else
-                    printf("*** Test STOPPED ***\r\n");
-
-                nlflag = true;
+                {
+                    if (!pgm_reset(port))
+                    {
+                        if (nlflag)
+                        {
+                            printf("\r\n");
+                            nlflag = false;
+                        }
+                        print_target_error(false);
+                    }
+                    else
+                    {
+                        printf("*** Test STOPPED ***\r\n");
+                        nlflag = true;
+                        run = false;
+                    }
+                }
 
                 break;
             }
@@ -779,7 +814,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
 static test_cmd_t get_test_cmd(bool nonblock)
 {
-    if (nonblock && !kbhit())
+    if (nonblock && !_kbhit())
         return NoCmd;
 
     switch (getch())
@@ -837,9 +872,12 @@ static void print_progress(int pct)
     fflush(stdout);
 }
 
-static void print_target_error(void)
+static void print_target_error(bool nl)
 {
-    fprintf(stderr, "\r\n\r\nOperation failed: ");
+    if (nl)
+        fprintf(stderr, "\r\n\r\n");
+
+    fprintf(stderr, "Operation failed: ");
 
     switch (_g_last_error)
     {

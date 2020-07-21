@@ -22,7 +22,7 @@
 
 typedef struct
 {
-	uint8_t cmd;
+	uint8_t index;
 	bool is_read;
 	const char *desc;
 } test_t;
