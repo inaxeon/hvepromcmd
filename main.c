@@ -24,6 +24,7 @@
 #include "getopt.h"
 #include "serial.h"
 #include "pgm.h"
+#include "test.h"
 
 #define PROGRESS_BAR_SEGMENTS   58
 #define MCM6876X_DEFAULT_RETRIES    5
@@ -36,7 +37,18 @@ typedef enum
     Verify,
     BlankCheck,
     Measure12V,
+    Test
 } operation_t;
+
+typedef enum
+{
+    InvalidCmd,
+    NoCmd,
+    NextTest,
+    PrevTest,
+    StartStop,
+    Quit
+} test_cmd_t;
 
 int _g_last_error;
 int _g_segments_printed;
@@ -48,11 +60,13 @@ static bool target_verify(port_handle_t port, device_type_t dev_type, const char
 static bool target_measure_12v(port_handle_t port, device_type_t dev_type);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
 static bool work_verify(port_handle_t port, device_type_t dev_type, const char *filename, bool *matches);
+static bool target_test(port_handle_t port, device_type_t dev_type);
 static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
 static void print_progress_outline();
 static void print_target_error(void);
 static void help(const char *progname);
+static test_cmd_t get_test_cmd(bool nonblock);
 
 int main(int argc, char *argv[])
 {
@@ -97,6 +111,8 @@ int main(int argc, char *argv[])
                     operation = BlankCheck;
                 else if (!_stricmp(optarg, "measure12v"))
                     operation = Measure12V;
+                else if (!_stricmp(optarg, "test"))
+                    operation = Test;
                 break;
             }
             case 'd':
@@ -195,6 +211,7 @@ int main(int argc, char *argv[])
         }
     }
 
+#if 0
     if (!serial_open(port_name, baud, &port))
     {
 #ifdef _WIN32
@@ -205,6 +222,7 @@ int main(int argc, char *argv[])
         operation_result = false;
         goto out;
     }
+#endif
     
     switch (dev_type)
     {
@@ -256,6 +274,8 @@ int main(int argc, char *argv[])
         case Measure12V:
             operation_result = target_measure_12v(port, dev_type);
             break;
+        case Test:
+            operation_result = target_test(port, dev_type);
         default:
             fprintf(stderr, "\r\nNo operation specified.\r\n");
             operation_result = false;
@@ -301,8 +321,10 @@ static void help(const char *progname)
         "\tFor all device types use '-n' to specify the number of passes.\r\n"
         "\tManufacturer recommended defaults are used if this option is not specified.\r\n\r\n"
         "Verify device against file:\r\n\r\n"
-        "\t%s -o verify -p PORT -d DEVICE -f FILE [-b]\r\n\r\n",
-        progname, progname, progname, progname, MCM6876X_DEFAULT_RETRIES, progname);
+        "\t%s -o verify -p PORT -d DEVICE -f FILE [-b]\r\n\r\n"        
+        "Start the hardware test for the shield of a given device type:\r\n\r\n"
+        "\t%s -o test -p PORT -d DEVICE\r\n\r\n",
+        progname, progname, progname, progname, MCM6876X_DEFAULT_RETRIES, progname, progname);
 }
 
 static bool target_read(port_handle_t port, device_type_t dev_type, const char *filename)
@@ -634,7 +656,158 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
     return true;
 }
 
-static void print_progress_outline()
+static bool target_test(port_handle_t port, device_type_t dev_type)
+{
+    test_t *tests;
+    int testidx;
+    int testcnt = 0;
+    int testlast = -1;
+    bool run = false;
+    bool nlflag = false;
+
+    switch (dev_type)
+    {
+        case C1702A:
+            tests = &_g_1702a_tests;
+            break;
+        case C2704:
+        case C2708:
+            tests = _g_270x_tests;
+            break;
+        case MCM6876X:
+            tests = _g_mcm6876x_tests;
+            break;
+        default:
+            return false;
+    }
+
+    for (testidx = 0; tests[testidx].cmd; testidx++)
+        testcnt++;
+
+    testidx = 0;
+
+    printf("\r\n");
+
+    while (1)
+    {
+        if (testlast != testidx)
+        {
+            if (nlflag)
+            {
+                nlflag = false;
+                printf("\r\n");
+            }
+
+            printf("-------------------------------------------------------------------------------\r\n");
+            printf("\r\nTest %u of %u:\r\n\r\n", testidx + 1, testcnt);
+            printf("%s", tests[testidx].desc);
+            printf("\r\n-------------------------------------------------------------------------------\r\n");
+            printf("\r\nPress [spacebar] to start/stop test. Use arrow keys <-/-> to navigate through tests. Press 'Q' to quit.\r\n\r\n");
+            
+            testlast = testidx;
+        }
+
+        switch (get_test_cmd(tests[testidx].is_read && run))
+        {
+            case NextTest:
+            {
+                if (testidx < (testcnt - 1))
+                {
+                    testidx++;
+                }
+                else
+                {
+                    printf("*** Already at last test ***\r\n");
+                    nlflag = true;
+                }
+                run = false;
+                break;
+            }
+            case PrevTest:
+            {
+                if (testidx > 0)
+                {
+                    testidx--;
+                }
+                else
+                {
+                    printf("*** Already at first test ***\r\n");
+                    nlflag = true;
+                }
+
+                run = false;
+                break;
+            }
+            case StartStop:
+            {
+                run = !run;
+            
+                // Inline errors? i.e. incorrect switch / shield
+
+                if (run)
+                    printf("*** Test RUNNING ***\r\n");
+                else
+                    printf("*** Test STOPPED ***\r\n");
+
+                nlflag = true;
+
+                break;
+            }
+            case InvalidCmd:
+            {
+                printf("*** Invalid command ***\r\n");
+                nlflag = true;
+                break;
+            }
+            case NoCmd:
+            {
+                Sleep(500);
+                printf("*** read ***\r\n");
+                break;
+            }
+            case Quit:
+            {
+                goto done;
+            }
+        }
+    }
+
+    done:
+    // Stop test
+    return true;
+}
+
+static test_cmd_t get_test_cmd(bool nonblock)
+{
+    if (nonblock && !kbhit())
+        return NoCmd;
+
+    switch (getch())
+    {
+    case 0xE0:
+        switch (getch())
+        {
+        case 'M':
+            return NextTest;
+        case 'K':
+            return PrevTest;
+        default:
+            return InvalidCmd;
+            break;
+        }
+        break;
+    case ' ':
+        return StartStop;
+    case 'q':
+    case 'Q':
+    case 0x03:
+        return Quit;
+    default:
+        return InvalidCmd;
+    }
+}
+
+static void print_progress_outline(void)
 {
     _g_segments_printed = 0;
 
