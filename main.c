@@ -661,7 +661,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     int testcnt = 0;
     int testlast = -1;
     bool run = false;
-    bool nlflag = false;
+    int nlflag = 0;
 
     switch (dev_type)
     {
@@ -692,13 +692,15 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
         {
             if (nlflag)
             {
-                nlflag = false;
+                nlflag = 0;
                 printf("\r\n");
             }
 
             printf("-------------------------------------------------------------------------------\r\n");
             printf("\r\nTest %u of %u:\r\n\r\n", testidx + 1, testcnt);
             printf("%s", tests[testidx].desc);
+            if (tests[testidx].is_read)
+                printf("\r\n");
             printf("\r\n-------------------------------------------------------------------------------\r\n");
             printf("\r\nPress [spacebar] to start/stop test. Use arrow keys <-/-> to navigate through tests. Press 'Q' to quit.\r\n\r\n");
             
@@ -716,7 +718,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 else
                 {
                     printf("*** Already at last test ***\r\n");
-                    nlflag = true;
+                    nlflag++;
                 }
 
                 if (run)
@@ -736,7 +738,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 else
                 {
                     printf("*** Already at first test ***\r\n");
-                    nlflag = true;
+                    nlflag++;
                 }
 
                 if (run)
@@ -756,14 +758,14 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                         if (nlflag)
                         {
                             printf("\r\n");
-                            nlflag = false;
+                            nlflag = 0;
                         }
                         print_target_error(false);
                     }
                     else
                     {
                         printf("*** Test RUNNING ***\r\n");
-                        nlflag = true;
+                        nlflag++;
                         run = true;
                     }
                 }
@@ -774,14 +776,14 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                         if (nlflag)
                         {
                             printf("\r\n");
-                            nlflag = false;
+                            nlflag = 0;
                         }
                         print_target_error(false);
                     }
                     else
                     {
                         printf("*** Test STOPPED ***\r\n");
-                        nlflag = true;
+                        nlflag++;
                         run = false;
                     }
                 }
@@ -791,13 +793,37 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             case InvalidCmd:
             {
                 printf("*** Invalid command ***\r\n");
-                nlflag = true;
+                nlflag++;
                 break;
             }
             case NoCmd:
             {
+                uint8_t data;
+
+                if (!pgm_test_read(port, dev_type, &data))
+                {
+                    if (nlflag)
+                    {
+                        printf("\r\n");
+                        nlflag = 0;
+                    }
+                    print_target_error(false);
+                }
+
+                printf("\033[%dA [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]\r\033[%dB",
+                    nlflag + 6,
+                    (data & 0x01) == 0x01 ? 'H' : 'L',
+                    (data & 0x02) == 0x02 ? 'H' : 'L',
+                    (data & 0x04) == 0x04 ? 'H' : 'L',
+                    (data & 0x08) == 0x08 ? 'H' : 'L',
+                    (data & 0x10) == 0x10 ? 'H' : 'L',
+                    (data & 0x20) == 0x20 ? 'H' : 'L',
+                    (data & 0x40) == 0x40 ? 'H' : 'L',
+                    (data & 0x80) == 0x80 ? 'H' : 'L',
+                    nlflag + 6);
+
                 Sleep(500);
-                printf("*** read ***\r\n");
+
                 break;
             }
             case Quit:
@@ -807,8 +833,20 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
         }
     }
 
-    done:
-    // Stop test
+done:
+
+    if (!pgm_reset(port))
+    {
+        if (nlflag)
+        {
+            printf("\r\n");
+            nlflag = 0;
+        }
+
+        print_target_error(false);
+        return false;
+    }
+
     return true;
 }
 

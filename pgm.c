@@ -286,7 +286,7 @@ bool pgm_test_read(port_handle_t port, device_type_t dev_type, uint8_t *data_rea
     if (!check_return_code(port, CMD_TEST_READ))
         return false;
 
-    if (_g_last_error == PGM_ERR_OK)
+    if (_g_last_error != PGM_ERR_OK)
         return false;
 
     if (!serial_read(port, data_read, 1))
