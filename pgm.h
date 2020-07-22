@@ -30,7 +30,7 @@
 #define CMD_DEV_RESET                       0x16
 #define CMD_MEASURE_12V                     0x17
 #define CMD_TEST                            0x18
-#define CMD_TEST_READ                        0x19
+#define CMD_TEST_READ                       0x19
 
 #define PGM_ERR_BADACK                      -2
 #define PGM_ERR_TIMEOUT                     -1

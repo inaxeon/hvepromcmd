@@ -22,9 +22,16 @@
 extern int _g_last_error;
 
 #ifndef _WIN32
+
+bool posix_kbhit();
+
 #define _stricmp strcasecmp
 #define _strdup strdup
 #define strcpy_s(dst, sz, src) strcpy(dst, src)
+#define Sleep sleep
+#define getch() getchar()
+#define _kbhit posix_kbhit
+
 #endif
 
 #endif /* __PROJECT_H__ */

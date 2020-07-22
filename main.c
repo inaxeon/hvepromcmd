@@ -25,6 +25,7 @@
 #include "serial.h"
 #include "pgm.h"
 #include "test.h"
+#include "util.h"
 
 #define PROGRESS_BAR_SEGMENTS   58
 #define MCM6876X_DEFAULT_RETRIES    5
@@ -86,13 +87,13 @@ int main(int argc, char *argv[])
 
     if (!argv[1] || !strcmp(argv[1], "/?"))
     {
-        // Can't parse '/' options - but a windows person is likely to do at least this
+        // Can't parse '/' options - but a Windows person is likely to do at least this
         help(argv[0]);
         return EXIT_FAILURE;
     }
 
     _g_last_error = PGM_ERR_OK;
-
+    
     memset(port_name, 0, sizeof(port_name));
 
     while ((opt = getopt(argc, argv, "o:p:u:d:f:n:r:mbv?")) != -1)
@@ -274,6 +275,7 @@ int main(int argc, char *argv[])
             break;
         case Test:
             operation_result = target_test(port, dev_type);
+            break;
         default:
             fprintf(stderr, "\r\nNo operation specified.\r\n");
             operation_result = false;
@@ -686,6 +688,10 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
     printf("\r\n");
 
+#ifndef _WIN32
+    terminal_set_raw_mode();
+#endif
+
     while (1)
     {
         if (testlast != testidx)
@@ -834,8 +840,11 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     }
 
 done:
+#ifndef _WIN32
+    terminal_unset_raw_mode();
+#endif
 
-    if (!pgm_reset(port))
+    if (run && !pgm_reset(port))
     {
         if (nlflag)
         {
@@ -857,6 +866,7 @@ static test_cmd_t get_test_cmd(bool nonblock)
 
     switch (getch())
     {
+#ifdef _WIN32
     case 0xE0:
         switch (getch())
         {
@@ -866,9 +876,28 @@ static test_cmd_t get_test_cmd(bool nonblock)
             return PrevTest;
         default:
             return InvalidCmd;
-            break;
         }
         break;
+#else
+    case 0x1B:
+        switch (getch())
+        {
+            case '[':
+                switch (getch())
+                {
+                    case 'C':
+                        return NextTest;
+                    case 'D':
+                        return PrevTest;
+                    default:
+                        return InvalidCmd;
+                }
+                break;
+            default:
+                return InvalidCmd;
+        }
+        break;
+#endif
     case ' ':
         return StartStop;
     case 'q':
@@ -878,36 +907,6 @@ static test_cmd_t get_test_cmd(bool nonblock)
     default:
         return InvalidCmd;
     }
-}
-
-static void print_progress_outline(void)
-{
-    _g_segments_printed = 0;
-
-    printf("\033[%dC]\r[", PROGRESS_BAR_SEGMENTS + 1);
-}
-
-static void print_passes(int pass, int num_passes)
-{
-    int offset = PROGRESS_BAR_SEGMENTS - _g_segments_printed + 2;
-    int passlen;
-    printf("\033[%dC", offset);
-    passlen = printf("%d/%d", pass, num_passes);
-    printf("\033[%dD", offset + passlen);
-    fflush(stdout);
-}
-
-static void print_progress(int pct)
-{
-    int segments_needed = (PROGRESS_BAR_SEGMENTS * (pct * 100)) / 10000;
-    int segments_to_print = (segments_needed - _g_segments_printed);
-    if (segments_needed > _g_segments_printed)
-    {
-        for (int i = 0; i < segments_to_print; i++)
-            fputc('=', stdout);
-        _g_segments_printed += segments_to_print;
-    }
-    fflush(stdout);
 }
 
 static void print_target_error(bool nl)
@@ -949,4 +948,34 @@ static void print_target_error(bool nl)
     }
 
     fprintf(stderr, "\r\n\r\n");
+}
+
+static void print_progress_outline(void)
+{
+    _g_segments_printed = 0;
+
+    printf("\033[%dC]\r[", PROGRESS_BAR_SEGMENTS + 1);
+}
+
+static void print_passes(int pass, int num_passes)
+{
+    int offset = PROGRESS_BAR_SEGMENTS - _g_segments_printed + 2;
+    int passlen;
+    printf("\033[%dC", offset);
+    passlen = printf("%d/%d", pass, num_passes);
+    printf("\033[%dD", offset + passlen);
+    fflush(stdout);
+}
+
+static void print_progress(int pct)
+{
+    int segments_needed = (PROGRESS_BAR_SEGMENTS * (pct * 100)) / 10000;
+    int segments_to_print = (segments_needed - _g_segments_printed);
+    if (segments_needed > _g_segments_printed)
+    {
+        for (int i = 0; i < segments_to_print; i++)
+            fputc('=', stdout);
+        _g_segments_printed += segments_to_print;
+    }
+    fflush(stdout);
 }

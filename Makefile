@@ -1,4 +1,4 @@
-SRCS       = main.c pgm.c serial_posix.c
+SRCS       = main.c pgm.c test_descriptions.c serial_posix.c util.c
 OBJS       = $(SRCS:.c=.o)
 DEPDIR     = deps
 DEPFLAGS   = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
