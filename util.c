@@ -16,11 +16,12 @@
  *   along with this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _WIN32
 
 #include "pch.h"
 
 #include "util.h"
+
+#ifndef _WIN32
 
 bool posix_kbhit()
 {
@@ -45,4 +46,4 @@ void terminal_unset_raw_mode()
     tcsetattr(STDIN_FILENO, TCSANOW, &term);
 }
 
-#endif
+#endif /* _WIN32 */

@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     }
 
     _g_last_error = PGM_ERR_OK;
-    
+
     memset(port_name, 0, sizeof(port_name));
 
     while ((opt = getopt(argc, argv, "o:p:u:d:f:n:r:mbv?")) != -1)
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
                 strcpy_s(port_name, sizeof(port_name), optarg);
 #ifdef _WIN32
                 _strupr_s(port_name, sizeof(port_name));
-#endif
+#endif /* _WIN32 */
                 break;
             }
             case 'u':
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "\r\nFailed to open serial port.\r\n");
 #else
         fprintf(stderr, "\r\nFailed to open serial port (%s).\r\n", strerror(errno));
-#endif
+#endif /* _WIN32 */
         operation_result = false;
         goto out;
     }
@@ -356,7 +356,7 @@ static bool target_read(port_handle_t port, device_type_t dev_type, const char *
     if (fopen_s(&output_file, filename, "wb"))
 #else
     if (!(output_file = fopen(filename, "wb")))
-#endif
+#endif /* _WIN32 */
     {
         fprintf(stderr, "\r\nFailed to open output file for writing.\r\n");
         success = false;
@@ -410,7 +410,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     if (fopen_s(&input_file, filename, "rb"))
 #else
     if (!(input_file = fopen(filename, "rb")))
-#endif
+#endif /* _WIN32 */
     {
         fprintf(stderr, "\r\nFailed to open input file for reading.\r\n");
         return false;
@@ -569,7 +569,7 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
     if (fopen_s(&input_file, filename, "rb"))
 #else
     if (!(input_file = fopen(filename, "rb")))
-#endif
+#endif /* _WIN32 */
     {
         fprintf(stderr, "\r\nFailed to open input file for reading.\r\n");
         return false;
@@ -690,7 +690,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
 #ifndef _WIN32
     terminal_set_raw_mode();
-#endif
+#endif /* _WIN32 */
 
     while (1)
     {
@@ -842,7 +842,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 done:
 #ifndef _WIN32
     terminal_unset_raw_mode();
-#endif
+#endif /* _WIN32 */
 
     if (run && !pgm_reset(port))
     {

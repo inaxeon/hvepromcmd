@@ -26,6 +26,6 @@ void catch_sigterm();
 void terminal_set_raw_mode();
 void terminal_unset_raw_mode();
 
-#endif
+#endif /* _WIN32 */
 
- #endif
+#endif /* __UTIL_H__ */
