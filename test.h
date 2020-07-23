@@ -30,5 +30,6 @@ typedef struct
 extern const test_t _g_1702a_tests[];
 extern const test_t _g_270x_tests[];
 extern const test_t _g_mcm6876x_tests[];
+extern const test_t _g_mcs48_tests[];
 
 #endif /* __TEST_H__ */

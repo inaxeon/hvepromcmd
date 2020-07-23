@@ -352,6 +352,12 @@ int pgm_get_dev_size(device_type_t device_type)
         return 0x400;
     case MCM6876X:
         return 0x2000;
+    case D8741:
+    case D8748:
+        return 0x400;
+    case D8742:
+    case D8749:
+        return 0x800;
     default:
         return -1;
     }

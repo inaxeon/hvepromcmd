@@ -51,7 +51,11 @@ typedef enum
     C1702A = 0x00,
     C2704 = 0x01,
     C2708 = 0x02,
-    MCM6876X = 0x03
+    MCM6876X = 0x03,
+    D8748 = 0x04,
+    D8749 = 0x05,
+    D8741 = 0x06,
+    D8742 = 0x07
 } device_type_t;
 
 typedef struct

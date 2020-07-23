@@ -126,6 +126,14 @@ int main(int argc, char *argv[])
                     dev_type = C2708;
                 else if (!_stricmp(optarg, "MCM6876X"))
                     dev_type = MCM6876X;
+                else if (!_stricmp(optarg, "8741"))
+                    dev_type = D8741;
+                else if (!_stricmp(optarg, "8742"))
+                    dev_type = D8742;
+                else if (!_stricmp(optarg, "8748"))
+                    dev_type = D8748;
+                else if (!_stricmp(optarg, "8749"))
+                    dev_type = D8749;
                 break;
             }
             case 'p':
@@ -240,6 +248,10 @@ int main(int argc, char *argv[])
             hit_until_set = false;
             break;
         }
+        case D8741:
+        case D8742:
+        case D8748:
+        case D8749:
         case MCM6876X:
         {
             if (!num_passes)
@@ -250,7 +262,7 @@ int main(int argc, char *argv[])
         }
         default:
         {
-            fprintf(stderr, "\r\nNo device type specified.\r\n");
+            fprintf(stderr, "\r\nInvalid or no device type specified.\r\n");
             operation_result = false;
             goto out;
         }
@@ -676,6 +688,12 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             break;
         case MCM6876X:
             tests = _g_mcm6876x_tests;
+            break;
+        case D8741:
+        case D8748:
+        case D8742:
+        case D8749:
+            tests = _g_mcs48_tests;
             break;
         default:
             return false;

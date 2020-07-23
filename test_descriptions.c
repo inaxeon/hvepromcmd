@@ -50,6 +50,14 @@
 #define TEST_MCM6876X_55        6
 #define TEST_MCM6876X_DATA      7
 
+#define TEST_MCS48_PON          1
+#define TEST_MCS48_EA           2
+#define TEST_MCS48_PROG         3
+#define TEST_MCS48_VDD          4
+#define TEST_MCS48_AA           5
+#define TEST_MCS48_55           6
+#define TEST_MCS48_DATA         7
+
 #define DESC_TEST_1702A_READ_PON \
     "Connect your multimeter negative (black) probe to a GND pin on the Arduino header.\r\n" \
     "\r\n" \
@@ -179,6 +187,7 @@
     "19: A5 = +3.3V\r\n" \
     "17: A7 = +3.3V\r\n"
 
+
 #define DESC_TEST_270X_PON \
     "Connect your multimeter negative (black) probe to pin 12 on the EPROM socket.\r\n" \
     "\r\n" \
@@ -276,6 +285,7 @@
     "\r\n" \
     "[ 9] [10] [11] [13] [14] [15] [16] [17]\r\n"
 
+
 #define DESC_TEST_MCM6876X_PON \
     "Connect your multimeter negative (black) probe to pin 12 on the EPROM socket.\r\n" \
     "\r\n" \
@@ -369,6 +379,101 @@
     "\r\n" \
     "[ 9] [10] [11] [13] [14] [15] [16] [17]\r\n"
 
+
+#define DESC_TEST_MCS48_PON \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "40: VCC   = +5V\r\n" \
+    " 7: EA    = +5V\r\n" \
+    "25: PROG  = +5V\r\n" \
+    "26: VDD   = +5V\r\n"
+
+#define DESC_TEST_MCS48_EA \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    " 7: EA    = +18V\r\n" \
+    /*"\r\n" \
+    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+
+#define DESC_TEST_MCS48_PROG \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "25: PROG  = +18V\r\n" \
+    /*"\r\n" \
+    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+
+#define DESC_TEST_MCS48_VDD \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "26: VDD   = +21V\r\n" \
+    /*"\r\n" \
+    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+
+#define DESC_TEST_MCS48_AA \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "21: P20     = 0V\r\n" \
+    "23: P22     = 0V\r\n" \
+    " 6: INT/CS  = 0V\r\n" \
+    " 1: TEST0   = 0V\r\n" \
+    "\r\n" \
+    "12: D0      = 0V\r\n" \
+    "14: D2      = 0V\r\n" \
+    "16: D4      = 0V\r\n" \
+    "18: D6      = 0V\r\n" \
+    "\r\n" \
+    "22: P21     = +5V\r\n" \
+    " 4: RESET   = +5V\r\n" \
+    " 9: PSEN/A0 = +5V\r\n" \
+    "\r\n" \
+    "13: D1      = +5V\r\n" \
+    "15: D3      = +5V\r\n" \
+    "17: D5      = +5V\r\n" \
+    "19: D7      = +5V\r\n"
+
+#define DESC_TEST_MCS48_55 \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "21: P20     = +5V\r\n" \
+    "23: P22     = +5V\r\n" \
+    " 6: INT/CS  = +5V\r\n" \
+    " 1: TEST0   = +5V\r\n" \
+    "\r\n" \
+    "12: D0      = +5V\r\n" \
+    "14: D2      = +5V\r\n" \
+    "16: D4      = +5V\r\n" \
+    "18: D6      = +5V\r\n" \
+    "\r\n" \
+    "22: P21     = 0V\r\n" \
+    " 4: RESET   = 0V\r\n" \
+    " 9: PSEN/A0 = 0V\r\n" \
+    "\r\n" \
+    "13: D1      = 0V\r\n" \
+    "15: D3      = 0V\r\n" \
+    "17: D5      = 0V\r\n" \
+    "19: D7      = 0V\r\n"
+
+#define DESC_TEST_MCS48_DATA \
+    "Use 8 10K resistors to tie all of the data pins LOW to GND (pin 20).\r\n" \
+    "\r\n" \
+    "Connect another 100ohm resistor to VCC (pin 40) and touch the other end on the data pins one by one, ensuring that you witness each bit in both LOW and HIGH states.\r\n" \
+    "\r\n" \
+    "The display below is refreshed every second.\r\n" \
+    "\r\n" \
+    "[12] [13] [14] [15] [16] [17] [18] [19]\r\n"
+
 const test_t _g_1702a_tests[] =
 {
     { TEST_1702A_READ_PON, false, DESC_TEST_1702A_READ_PON },
@@ -404,5 +509,17 @@ const test_t _g_mcm6876x_tests[] =
     { TEST_MCM6876X_AA, false, DESC_TEST_MCM6876X_AA },
     { TEST_MCM6876X_55, false, DESC_TEST_MCM6876X_55 },
     { TEST_MCM6876X_DATA, true, DESC_TEST_MCM6876X_DATA },
+    { 0, false, NULL },
+};
+
+const test_t _g_mcs48_tests[] =
+{
+    { TEST_MCS48_PON, false, DESC_TEST_MCS48_PON },
+    { TEST_MCS48_VDD, false, DESC_TEST_MCS48_VDD },
+    { TEST_MCS48_EA, false, DESC_TEST_MCS48_EA },
+    { TEST_MCS48_PROG, false, DESC_TEST_MCS48_PROG },
+    { TEST_MCS48_AA, false, DESC_TEST_MCS48_AA },
+    { TEST_MCS48_55, false, DESC_TEST_MCS48_55 },
+    { TEST_MCS48_DATA, true, DESC_TEST_MCS48_DATA },
     { 0, false, NULL },
 };
