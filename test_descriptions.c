@@ -123,7 +123,7 @@
     "\r\n" \
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT DURING THIS TEST ***\r\n" \
+    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT. RUN TEST FOR AS LITTLE TIME AS POSSIBLE. ***\r\n" \
     "\r\n" \
     "24: VDD = +47V\r\n" \
     "16: VGG = +47V\r\n" \
@@ -139,7 +139,7 @@
     "\r\n" \
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT DURING THIS TEST ***\r\n" \
+    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT. RUN TEST FOR AS LITTLE TIME AS POSSIBLE. ***\r\n" \
     "\r\n" \
     "13: PGM = 0V\r\n"
 
@@ -148,7 +148,7 @@
     "\r\n" \
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT DURING THIS TEST ***\r\n" \
+    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT. RUN TEST FOR AS LITTLE TIME AS POSSIBLE. ***\r\n" \
     "\r\n" \
     "24: VDD = 0V\r\n" \
     "16: VDD = +10V\r\n"
@@ -158,7 +158,7 @@
     "\r\n" \
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT DURING THIS TEST ***\r\n" \
+    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT. RUN TEST FOR AS LITTLE TIME AS POSSIBLE. ***\r\n" \
     "\r\n" \
     " 3: A0 = +3.3V\r\n" \
     " 1: A2 = +3.3V\r\n" \
@@ -175,7 +175,7 @@
     "\r\n" \
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT DURING THIS TEST ***\r\n" \
+    "*** ENSURE Q10 - Q18 DO NOT OVERHEAT. RUN TEST FOR AS LITTLE TIME AS POSSIBLE. ***\r\n" \
     "\r\n" \
     " 3: A0 = +47V\r\n" \
     " 1: A2 = +47V\r\n" \
