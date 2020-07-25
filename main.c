@@ -56,7 +56,7 @@ int _g_segments_printed;
 
 static bool target_read(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_blank_check(port_handle_t port, device_type_t dev_type);
-static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_retries);
+static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_rewrites);
 static bool target_verify(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_measure_12v(port_handle_t port, device_type_t dev_type);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     int opt = 0;
     int baud = 38400;
     int num_passes = 0;
-    int num_retries = 0;
+    int num_rewrites = 0;
     char port_name[32];
     char *filename = NULL;
     operation_t operation = None;
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
             }
             case 'r':
             {
-                num_retries = atoi(optarg);
+                num_rewrites = atoi(optarg);
                 break;
             }
             case 'm':
@@ -252,12 +252,19 @@ int main(int argc, char *argv[])
         case D8742:
         case D8748:
         case D8749:
+        {
+            if (!num_passes)
+                num_passes = 1;
+            if (!num_rewrites)
+                num_rewrites = 0;
+            break;
+        }
         case MCM6876X:
         {
             if (!num_passes)
                 num_passes = 1;
-            if (!num_retries)
-                num_retries = 5;
+            if (!num_rewrites)
+                num_rewrites = 5;
             break;
         }
         default:
@@ -280,7 +287,7 @@ int main(int argc, char *argv[])
             operation_result = target_verify(port, dev_type, filename);
             break;
         case Write:
-            operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, num_retries);
+            operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, num_rewrites);
             break;
         case Measure12V:
             operation_result = target_measure_12v(port, dev_type);
@@ -327,7 +334,7 @@ static void help(const char *progname)
         "\t%s -o write -p PORT -d DEVICE -f FILE [-b] [-v] [-r RETRIES] [-m] [-n PASSES]\r\n\r\n"
         "\tPass '-b' to blank check before write. Pass '-v' to verify device after write.\r\n\r\n"
         "\tFor MCM68676x each byte is written until it matches the desired value, then written\r\n"
-        "\ta further RETRIES (-r) times. This defaults to %u if RETRIES is not specified.\r\n\r\n"
+        "\ta further REWRITES (-r) times. This defaults to %u if REWRITES is not specified.\r\n\r\n"
         "\tAlso for MCM68676x '-m' can be optionally passed to force the programmer\r\n"
         "\tto the simpler 'fixed passes' mode for older versions of the chip.\r\n\r\n"
         "\tFor all device types use '-n' to specify the number of passes.\r\n"
@@ -406,7 +413,7 @@ out:
     return success;
 }
 
-static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_retries)
+static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_rewrites)
 {
     bool success = false;
     bool blank;
@@ -467,6 +474,13 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
             success = false;
             goto out;
         }
+
+        if (!pgm_reset(port))
+        {
+            print_target_error(true);
+            success = false;
+            goto out;
+        }
     }
 
     printf("Writing device...\r\n\r\n");
@@ -481,7 +495,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         if (!hit_till_set)
             print_passes(pass + 1, num_passes);
 
-        if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_retries, &write_result, &print_progress, NULL))
+        if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_rewrites, &write_result, &print_progress, NULL))
         {
             print_target_error(true);
             success = false;
@@ -492,6 +506,14 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     if (verify)
     {
         printf("\r\n\r\n");
+
+        if (!pgm_reset(port))
+        {
+            print_target_error(true);
+            success = false;
+            goto out;
+        }
+
         if (!work_verify(port, dev_type, filename, &matches))
         {
             success = false;
@@ -724,7 +746,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             printf("\r\nTest %u of %u:\r\n\r\n", testidx + 1, testcnt);
             printf("%s", tests[testidx].desc);
             if (tests[testidx].is_read)
-                printf("\r\n");
+                printf(" [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]\r\n");
             printf("\r\n-------------------------------------------------------------------------------\r\n");
             printf("\r\nPress [spacebar] to start/stop test. Use arrow keys <-/-> to navigate through tests. Press 'Q' to quit.\r\n\r\n");
             
@@ -808,6 +830,10 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                     {
                         printf("*** Test STOPPED ***\r\n");
                         nlflag++;
+
+                        if (tests[testidx].is_read)
+                            printf("\033[%dA [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]\r\033[%dB", nlflag + 6, nlflag + 6);
+
                         run = false;
                     }
                 }
@@ -823,6 +849,8 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             case NoCmd:
             {
                 uint8_t data;
+
+                Sleep(500);
 
                 if (!pgm_test_read(port, dev_type, &data))
                 {
@@ -845,8 +873,6 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                     (data & 0x40) == 0x40 ? 'H' : 'L',
                     (data & 0x80) == 0x80 ? 'H' : 'L',
                     nlflag + 6);
-
-                Sleep(500);
 
                 break;
             }

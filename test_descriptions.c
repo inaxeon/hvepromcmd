@@ -395,27 +395,21 @@
     "\r\n" \
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    " 7: EA    = +18V\r\n" \
-    /*"\r\n" \
-    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+    " 7: EA    = +18V\r\n"
 
 #define DESC_TEST_MCS48_PROG \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
     "\r\n" \
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "25: PROG  = +18V\r\n" \
-    /*"\r\n" \
-    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+    "25: PROG  = +18V\r\n"
 
 #define DESC_TEST_MCS48_VDD \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
     "\r\n" \
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
-    "26: VDD   = +21V\r\n" \
-    /*"\r\n" \
-    "The VDD generator circuit will make a squealing noise during this test.\r\n"*/
+    "26: VDD   = +21V\r\n"
 
 #define DESC_TEST_MCS48_AA \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
