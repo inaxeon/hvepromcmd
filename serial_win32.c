@@ -30,7 +30,7 @@
 
 bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
 {
-    DCB dcbSerialParams;
+    DCB serial_params;
     COMMTIMEOUTS timeouts;
     HANDLE port;
     char port_buffer[32];
@@ -44,10 +44,10 @@ bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
     if (port == INVALID_HANDLE_VALUE)
         return false;
 
-    memset(&dcbSerialParams, 0, sizeof(DCB));
-    dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+    memset(&serial_params, 0, sizeof(DCB));
+    serial_params.DCBlength = sizeof(serial_params);
 
-    if (!GetCommState(port, &dcbSerialParams))
+    if (!GetCommState(port, &serial_params))
     {
         CloseHandle(port);
         return false;
@@ -56,24 +56,24 @@ bool serial_open(const char *port_name, int baud, port_handle_t *port_handle)
     switch (baud)
     {
     case 9600:
-        dcbSerialParams.BaudRate = CBR_9600;
+        serial_params.BaudRate = CBR_9600;
         break;
     case 38400:
-        dcbSerialParams.BaudRate = CBR_38400;
+        serial_params.BaudRate = CBR_38400;
         break;
     case 115200:
-        dcbSerialParams.BaudRate = CBR_115200;
+        serial_params.BaudRate = CBR_115200;
         break;
     default:
         CloseHandle(port);
         return false;
     }
 
-    dcbSerialParams.ByteSize = 8;
-    dcbSerialParams.StopBits = ONESTOPBIT;
-    dcbSerialParams.Parity = NOPARITY;
+    serial_params.ByteSize = 8;
+    serial_params.StopBits = ONESTOPBIT;
+    serial_params.Parity = NOPARITY;
 
-    if (!SetCommState(port, &dcbSerialParams))
+    if (!SetCommState(port, &serial_params))
     {
         CloseHandle(port);
         return false;

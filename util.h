@@ -28,4 +28,6 @@ void terminal_unset_raw_mode();
 
 #endif /* _WIN32 */
 
+void terminal_setup(void);
+
 #endif /* __UTIL_H__ */

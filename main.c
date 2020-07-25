@@ -92,6 +92,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    terminal_setup();
+
     _g_last_error = PGM_ERR_OK;
 
     memset(port_name, 0, sizeof(port_name));

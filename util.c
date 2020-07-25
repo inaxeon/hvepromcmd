@@ -47,3 +47,15 @@ void terminal_unset_raw_mode()
 }
 
 #endif /* _WIN32 */
+
+void terminal_setup(void)
+{
+#ifdef _WIN32
+    HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode = 0;
+
+    GetConsoleMode(stdout_handle, &mode);
+    mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(stdout_handle, mode);
+#endif /* _WIN32 */
+}

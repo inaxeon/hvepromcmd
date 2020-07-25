@@ -160,6 +160,7 @@
     <ClInclude Include="project.h" />
     <ClInclude Include="serial.h" />
     <ClInclude Include="test.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="getopt.c" />
@@ -173,6 +174,7 @@
     <ClCompile Include="pgm.c" />
     <ClCompile Include="serial_win32.c" />
     <ClCompile Include="test_descriptions.c" />
+    <ClCompile Include="util.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
