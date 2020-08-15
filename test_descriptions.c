@@ -51,12 +51,15 @@
 #define TEST_MCM6876X_DATA      7
 
 #define TEST_MCS48_PON          1
-#define TEST_MCS48_EA           2
-#define TEST_MCS48_PROG         3
-#define TEST_MCS48_VDD          4
-#define TEST_MCS48_AA           5
-#define TEST_MCS48_55           6
-#define TEST_MCS48_DATA         7
+#define TEST_MCS48_EA_12V       2
+#define TEST_MCS48_EA_18V       3
+#define TEST_MCS48_EA_22V       4
+#define TEST_MCS48_PROG         5
+#define TEST_MCS48_VDD_21V      6
+#define TEST_MCS48_VDD_25V      7
+#define TEST_MCS48_AA           8
+#define TEST_MCS48_55           9
+#define TEST_MCS48_DATA         10
 
 #define DESC_TEST_1702A_READ_PON \
     "Connect your multimeter negative (black) probe to a GND pin on the Arduino header.\r\n" \
@@ -390,12 +393,26 @@
     "25: PROG  = +5V\r\n" \
     "26: VDD   = +5V\r\n"
 
-#define DESC_TEST_MCS48_EA \
+#define DESC_TEST_MCS48_EA_12V \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    " 7: EA    = +12V\r\n"
+
+#define DESC_TEST_MCS48_EA_18V \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
     "\r\n" \
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
     " 7: EA    = +18V\r\n"
+
+#define DESC_TEST_MCS48_EA_22V \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    " 7: EA    = +22V\r\n"
 
 #define DESC_TEST_MCS48_PROG \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
@@ -404,12 +421,19 @@
     "\r\n" \
     "25: PROG  = +18V\r\n"
 
-#define DESC_TEST_MCS48_VDD \
+#define DESC_TEST_MCS48_VDD_21V \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
     "\r\n" \
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
     "26: VDD   = +21V\r\n"
+
+#define DESC_TEST_MCS48_VDD_25V \
+    "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
+    "\r\n" \
+    "26: VDD   = +25V\r\n"
 
 #define DESC_TEST_MCS48_AA \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
@@ -509,8 +533,11 @@ const test_t _g_mcm6876x_tests[] =
 const test_t _g_mcs48_tests[] =
 {
     { TEST_MCS48_PON, false, DESC_TEST_MCS48_PON },
-    { TEST_MCS48_VDD, false, DESC_TEST_MCS48_VDD },
-    { TEST_MCS48_EA, false, DESC_TEST_MCS48_EA },
+    { TEST_MCS48_VDD_21V, false, DESC_TEST_MCS48_VDD_21V },
+    { TEST_MCS48_VDD_25V, false, DESC_TEST_MCS48_VDD_25V },
+    { TEST_MCS48_EA_12V, false, DESC_TEST_MCS48_EA_12V },
+    { TEST_MCS48_EA_18V, false, DESC_TEST_MCS48_EA_18V },
+    { TEST_MCS48_EA_22V, false, DESC_TEST_MCS48_EA_22V },
     { TEST_MCS48_PROG, false, DESC_TEST_MCS48_PROG },
     { TEST_MCS48_AA, false, DESC_TEST_MCS48_AA },
     { TEST_MCS48_55, false, DESC_TEST_MCS48_55 },

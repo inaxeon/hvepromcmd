@@ -55,7 +55,9 @@ typedef enum
     D8748 = 0x04,
     D8749 = 0x05,
     D8741 = 0x06,
-    D8742 = 0x07
+    D8742 = 0x07,
+    P8048 = 0x08,
+    P8049 = 0x09
 } device_type_t;
 
 typedef struct

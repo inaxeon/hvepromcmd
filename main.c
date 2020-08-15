@@ -136,6 +136,10 @@ int main(int argc, char *argv[])
                     dev_type = D8748;
                 else if (!_stricmp(optarg, "8749"))
                     dev_type = D8749;
+                else if (!_stricmp(optarg, "8048"))
+                    dev_type = P8048;
+                else if (!_stricmp(optarg, "8049"))
+                    dev_type = P8049;
                 break;
             }
             case 'p':
@@ -329,7 +333,7 @@ static void help(const char *progname)
 #else
         "\tPORT must be in the format /dev/ttySx\r\n\r\n"
 #endif
-        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X\r\n\r\n"
+        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X/8748/8749/8741/8742/8048/8049\r\n\r\n"
         "Blank check device:\r\n\r\n"
         "\t%s -o blankcheck -p PORT -d DEVICE\r\n\r\n"
         "Write device from file:\r\n\r\n"
