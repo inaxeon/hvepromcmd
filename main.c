@@ -56,7 +56,7 @@ int _g_segments_printed;
 
 static bool target_read(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_blank_check(port_handle_t port, device_type_t dev_type);
-static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_rewrites);
+static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t parameter);
 static bool target_verify(port_handle_t port, device_type_t dev_type, const char *filename);
 static bool target_measure_12v(port_handle_t port, device_type_t dev_type);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
@@ -75,10 +75,11 @@ int main(int argc, char *argv[])
     bool hit_until_set = true;
     bool blank_check = false;
     bool verify = false;
+    bool slow = false;
     int opt = 0;
     int baud = 38400;
     int num_passes = 0;
-    int num_rewrites = 0;
+    int parameter = 0;
     char port_name[32];
     char *filename = NULL;
     operation_t operation = None;
@@ -167,7 +168,7 @@ int main(int argc, char *argv[])
             }
             case 'r':
             {
-                num_rewrites = atoi(optarg);
+                parameter = atoi(optarg);
                 break;
             }
             case 'm':
@@ -183,6 +184,11 @@ int main(int argc, char *argv[])
             case 'v':
             {
                 verify = true;
+                break;
+            }
+            case 's':
+            {
+                slow = true;
                 break;
             }
             default:
@@ -258,19 +264,20 @@ int main(int argc, char *argv[])
         case D8742:
         case D8748:
         case D8749:
+        case P8048:
+        case P8049:
         {
             if (!num_passes)
                 num_passes = 1;
-            if (!num_rewrites)
-                num_rewrites = 0;
+            parameter = slow ? 1 : 0;
             break;
         }
         case MCM6876X:
         {
             if (!num_passes)
                 num_passes = 1;
-            if (!num_rewrites)
-                num_rewrites = 5;
+            if (!parameter)
+                parameter = 5;
             break;
         }
         default:
@@ -293,7 +300,7 @@ int main(int argc, char *argv[])
             operation_result = target_verify(port, dev_type, filename);
             break;
         case Write:
-            operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, num_rewrites);
+            operation_result = target_write(port, dev_type, filename, num_passes, blank_check, verify, hit_until_set, parameter);
             break;
         case Measure12V:
             operation_result = target_measure_12v(port, dev_type);
@@ -337,12 +344,16 @@ static void help(const char *progname)
         "Blank check device:\r\n\r\n"
         "\t%s -o blankcheck -p PORT -d DEVICE\r\n\r\n"
         "Write device from file:\r\n\r\n"
-        "\t%s -o write -p PORT -d DEVICE -f FILE [-b] [-v] [-r RETRIES] [-m] [-n PASSES]\r\n\r\n"
+        "\t%s -o write -p PORT -d DEVICE -f FILE [-b] [-v] [-r REWRITES] [-m] [-n PASSES] [-s]\r\n\r\n"
         "\tPass '-b' to blank check before write. Pass '-v' to verify device after write.\r\n\r\n"
         "\tFor MCM68676x each byte is written until it matches the desired value, then written\r\n"
         "\ta further REWRITES (-r) times. This defaults to %u if REWRITES is not specified.\r\n\r\n"
         "\tAlso for MCM68676x '-m' can be optionally passed to force the programmer\r\n"
         "\tto the simpler 'fixed passes' mode for older versions of the chip.\r\n\r\n"
+        "\tFor MCS48 '-m' can be optionally passed to stop the programmer from verifying\r\n"
+        "\tand retrying writes inline.\r\n\r\n"
+        "\tAlso for MCS48 '-s' can be passed to use a slower write process observed to be needed\r\n"
+        "\tfor some CMOS parts.\r\n\r\n"
         "\tFor all device types use '-n' to specify the number of passes.\r\n"
         "\tManufacturer recommended defaults are used if this option is not specified.\r\n\r\n"
         "Verify device against file:\r\n\r\n"
@@ -419,7 +430,7 @@ out:
     return success;
 }
 
-static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t num_rewrites)
+static bool target_write(port_handle_t port, device_type_t dev_type, const char *filename, int num_passes, bool blank_check, bool verify, bool hit_till_set, uint8_t parameter)
 {
     bool success = false;
     bool blank;
@@ -501,7 +512,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         if (!hit_till_set)
             print_passes(pass + 1, num_passes);
 
-        if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, num_rewrites, &write_result, &print_progress, NULL))
+        if (!pgm_write(port, dev_type, write_buffer, pass, num_passes, hit_till_set, parameter, &write_result, &print_progress, NULL))
         {
             print_target_error(true);
             success = false;
@@ -721,6 +732,8 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
         case D8748:
         case D8742:
         case D8749:
+        case P8048:
+        case P8049:
             tests = _g_mcs48_tests;
             break;
         default:
@@ -733,6 +746,9 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     testidx = 0;
 
     printf("\r\n");
+
+    if (!target_measure_12v(port, dev_type))
+        return false;
 
 #ifndef _WIN32
     terminal_set_raw_mode();
