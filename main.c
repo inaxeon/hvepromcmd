@@ -186,11 +186,6 @@ int main(int argc, char *argv[])
                 verify = true;
                 break;
             }
-            case 's':
-            {
-                slow = true;
-                break;
-            }
             default:
             {
                 help(argv[0]);
@@ -269,7 +264,7 @@ int main(int argc, char *argv[])
         {
             if (!num_passes)
                 num_passes = 1;
-            parameter = slow ? 1 : 0;
+            parameter = 0;
             break;
         }
         case MCM6876X:
@@ -352,8 +347,6 @@ static void help(const char *progname)
         "\tto the simpler 'fixed passes' mode for older versions of the chip.\r\n\r\n"
         "\tFor MCS48 '-m' can be optionally passed to stop the programmer from verifying\r\n"
         "\tand retrying writes inline.\r\n\r\n"
-        "\tAlso for MCS48 '-s' can be passed to use a slower write process observed to be needed\r\n"
-        "\tfor some CMOS parts.\r\n\r\n"
         "\tFor all device types use '-n' to specify the number of passes.\r\n"
         "\tManufacturer recommended defaults are used if this option is not specified.\r\n\r\n"
         "Verify device against file:\r\n\r\n"
