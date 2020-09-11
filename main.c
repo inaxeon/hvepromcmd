@@ -429,6 +429,7 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     bool blank;
     bool matches;
     uint8_t *write_buffer = NULL;
+    uint8_t *file_buffer = NULL;
     write_result_t write_result;
     FILE *input_file;
     size_t file_size;
@@ -449,10 +450,16 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
     file_size = ftell(input_file);
     fseek(input_file, 0, SEEK_SET);
 
-    write_buffer = malloc(file_size);
+    write_buffer = malloc(dev_size);
+    file_buffer = malloc(file_size);
 
-    file_read = fread(write_buffer, sizeof(uint8_t), file_size, input_file);
+    file_read = fread(file_buffer, sizeof(uint8_t), file_size, input_file);
     fclose(input_file);
+
+    if (dev_type == D8748 || dev_type == D8749 || dev_type == D8741 || dev_type == D8742 || dev_type == C1702A)
+        memset(write_buffer, 0x00, dev_size);
+    else
+        memset(write_buffer, 0xFF, dev_size);
 
     if (file_read != file_size)
     {
@@ -467,6 +474,8 @@ static bool target_write(port_handle_t port, device_type_t dev_type, const char 
         success = false;
         goto out;
     }
+
+    memcpy(write_buffer, file_buffer, file_size);
 
     if (!target_measure_12v(port, dev_type))
         return false;
@@ -546,6 +555,8 @@ out:
     pgm_reset(port);
     if (write_buffer)
         free(write_buffer);
+    if (file_buffer)
+        free(file_buffer);
     return success;
 }
 
@@ -603,6 +614,8 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
 {
     bool success = false;
     uint8_t *input_buffer = NULL;
+    uint8_t *file_buffer = NULL;
+
     verify_result_t verify_result;
     FILE *input_file;
     int dev_size = pgm_get_dev_size(dev_type);
@@ -623,10 +636,16 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
     file_size = ftell(input_file);
     fseek(input_file, 0, SEEK_SET);
 
-    input_buffer = malloc(file_size);
+    input_buffer = malloc(dev_size);
+    file_buffer = malloc(file_size);
 
-    file_read = fread(input_buffer, sizeof(uint8_t), file_size, input_file);
+    file_read = fread(file_buffer, sizeof(uint8_t), file_size, input_file);
     fclose(input_file);
+
+    if (dev_type == D8748 || dev_type == D8749 || dev_type == D8741 || dev_type == D8742 || dev_type == C1702A)
+        memset(input_buffer, 0x00, dev_size);
+    else
+        memset(input_buffer, 0xFF, dev_size);
 
     if (file_read != file_size)
     {
@@ -643,6 +662,8 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
         success = false;
         goto out;
     }
+
+    memcpy(input_buffer, file_buffer, file_size);
 
     printf("Verifying device...\r\n\r\n");
 
@@ -674,6 +695,8 @@ out:
     pgm_reset(port);
     if (input_buffer)
         free(input_buffer);
+    if (file_buffer)
+        free(file_buffer);
     return success;
 }
 
