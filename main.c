@@ -141,6 +141,8 @@ int main(int argc, char *argv[])
                     dev_type = P8048;
                 else if (!_stricmp(optarg, "8049"))
                     dev_type = P8049;
+                else if (!_stricmp(optarg, "8050"))
+                    dev_type = P8050;
                 break;
             }
             case 'p':
@@ -261,6 +263,7 @@ int main(int argc, char *argv[])
         case D8749:
         case P8048:
         case P8049:
+        case P8050:
         {
             if (!num_passes)
                 num_passes = 1;
@@ -335,7 +338,7 @@ static void help(const char *progname)
 #else
         "\tPORT must be in the format /dev/ttySx\r\n\r\n"
 #endif
-        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X/8748/8749/8741/8742/8048/8049\r\n\r\n"
+        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X/8748/8749/8741/8742/8048/8049/8050\r\n\r\n"
         "Blank check device:\r\n\r\n"
         "\t%s -o blankcheck -p PORT -d DEVICE\r\n\r\n"
         "Write device from file:\r\n\r\n"
@@ -750,6 +753,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
         case D8749:
         case P8048:
         case P8049:
+        case P8050:
             tests = _g_mcs48_tests;
             break;
         default:
