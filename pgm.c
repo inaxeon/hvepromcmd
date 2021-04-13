@@ -359,6 +359,7 @@ int pgm_get_dev_size(device_type_t device_type)
     case D8742:
     case D8749:
     case P8049:
+    case D8755:
         return 0x800;
     case P8050:
         return 0x1000;
