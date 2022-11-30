@@ -1029,7 +1029,7 @@ static void print_line_prefix(void)
 static void print_progress_outline(void)
 {
     _g_segments_printed = 0;
-    printf("[", PROGRESS_BAR_SEGMENTS + 1);
+    printf("\033[%dC]\r[", PROGRESS_BAR_SEGMENTS + 1);
 }
 
 static void print_passes(int pass, int num_passes)
