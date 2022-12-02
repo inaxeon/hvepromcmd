@@ -64,10 +64,11 @@ static bool work_verify(port_handle_t port, device_type_t dev_type, const char *
 static bool target_test(port_handle_t port, device_type_t dev_type);
 static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
-static void print_progress_outline();
-static void print_target_error(bool nl);
+static void print_progress_outline(void);
+static void print_line_prefix(void);
+static void print_target_error(bool cli_mode);
 static void help(const char *progname);
-static test_cmd_t get_test_cmd(bool nonblock);
+static test_cmd_t get_test_cmd(bool non_block);
 
 int main(int argc, char *argv[])
 {
@@ -740,7 +741,6 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     int testcnt = 0;
     int testlast = -1;
     bool run = false;
-    int nlflag = 0;
 
     switch (dev_type)
     {
@@ -788,12 +788,6 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     {
         if (testlast != testidx)
         {
-            if (nlflag)
-            {
-                nlflag = 0;
-                printf("\r\n");
-            }
-
             printf("-------------------------------------------------------------------------------\r\n");
             printf("\r\nTest %u of %u:\r\n\r\n", testidx + 1, testcnt);
             printf("%s", tests[testidx].desc);
@@ -801,7 +795,10 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 printf(" [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]\r\n");
             printf("\r\n-------------------------------------------------------------------------------\r\n");
             printf("\r\nPress [spacebar] to start/stop test. Use arrow keys <-/-> to navigate through tests. Press 'Q' to quit.\r\n\r\n");
-            
+
+            print_line_prefix();
+            printf("Test STOPPED\r");
+
             testlast = testidx;
         }
 
@@ -815,8 +812,8 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 }
                 else
                 {
-                    printf("*** Already at last test ***\r\n");
-                    nlflag++;
+                    print_line_prefix();
+                    printf("Test STOPPED (At last test)\r");
                 }
 
                 if (run)
@@ -835,8 +832,8 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 }
                 else
                 {
-                    printf("*** Already at first test ***\r\n");
-                    nlflag++;
+                    print_line_prefix();
+                    printf("Test STOPPED (At first test)\r");
                 }
 
                 if (run)
@@ -853,17 +850,12 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 {
                     if (!pgm_test(port, dev_type, tests[testidx].index))
                     {
-                        if (nlflag)
-                        {
-                            printf("\r\n");
-                            nlflag = 0;
-                        }
                         print_target_error(false);
                     }
                     else
                     {
-                        printf("*** Test RUNNING ***\r\n");
-                        nlflag++;
+                        print_line_prefix();
+                        printf("Test RUNNING\r");
                         run = true;
                     }
                 }
@@ -871,20 +863,15 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                 {
                     if (!pgm_reset(port))
                     {
-                        if (nlflag)
-                        {
-                            printf("\r\n");
-                            nlflag = 0;
-                        }
                         print_target_error(false);
                     }
                     else
                     {
-                        printf("*** Test STOPPED ***\r\n");
-                        nlflag++;
+                        print_line_prefix();
+                        printf("Test STOPPED\r");
 
                         if (tests[testidx].is_read)
-                            printf("\033[%dA [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]\r\033[%dB", nlflag + 6, nlflag + 6);
+                            printf("\r\033[%dA [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]  [ ]\r\033[%dB", 6, 6);
 
                         run = false;
                     }
@@ -894,8 +881,8 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             }
             case InvalidCmd:
             {
-                printf("*** Invalid command ***\r\n");
-                nlflag++;
+                print_line_prefix();
+                printf("Invalid command\r");
                 break;
             }
             case NoCmd:
@@ -906,16 +893,11 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
                 if (!pgm_test_read(port, dev_type, &data))
                 {
-                    if (nlflag)
-                    {
-                        printf("\r\n");
-                        nlflag = 0;
-                    }
                     print_target_error(false);
                 }
 
-                printf("\033[%dA [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]\r\033[%dB",
-                    nlflag + 6,
+                printf("\r\033[%dA [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]  [%c]\r\033[%dB",
+                    6,
                     (data & 0x01) == 0x01 ? 'H' : 'L',
                     (data & 0x02) == 0x02 ? 'H' : 'L',
                     (data & 0x04) == 0x04 ? 'H' : 'L',
@@ -924,7 +906,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
                     (data & 0x20) == 0x20 ? 'H' : 'L',
                     (data & 0x40) == 0x40 ? 'H' : 'L',
                     (data & 0x80) == 0x80 ? 'H' : 'L',
-                    nlflag + 6);
+                    6);
 
                 break;
             }
@@ -942,12 +924,6 @@ done:
 
     if (run && !pgm_reset(port))
     {
-        if (nlflag)
-        {
-            printf("\r\n");
-            nlflag = 0;
-        }
-
         print_target_error(false);
         return false;
     }
@@ -955,9 +931,9 @@ done:
     return true;
 }
 
-static test_cmd_t get_test_cmd(bool nonblock)
+static test_cmd_t get_test_cmd(bool non_block)
 {
-    if (nonblock && !_kbhit())
+    if (non_block && !_kbhit())
         return NoCmd;
 
     switch (getch())
@@ -1005,51 +981,60 @@ static test_cmd_t get_test_cmd(bool nonblock)
     }
 }
 
-static void print_target_error(bool nl)
+static void print_target_error(bool cli_mode)
 {
-    if (nl)
+    if (cli_mode)
         fprintf(stderr, "\r\n\r\n");
+    else
+        print_line_prefix();
 
     fprintf(stderr, "Operation failed: ");
 
     switch (_g_last_error)
     {
     case PGM_ERR_BADACK:
-        fprintf(stderr, "A protocol error occurred communicating with the target.");
+        fprintf(cli_mode ? stderr : stdout, "A protocol error occurred communicating with the target.");
         break;
     case PGM_ERR_TIMEOUT:
-        fprintf(stderr, "Timed out attempting to communicate with the target.");
+        fprintf(cli_mode ? stderr : stdout, "Timed out attempting to communicate with the target.");
         break;
     case PGM_ERR_INVALID_COMMAND:
-        fprintf(stderr, "The target does not support this command.");
+        fprintf(cli_mode ? stderr : stdout, "The target does not support this command.");
         break;
     case PGM_ERR_NOTSUPPORTED:
-        fprintf(stderr, "The target does not support this device.");
+        fprintf(cli_mode ? stderr : stdout, "The target does not support this device.");
         break;
     case PGM_ERR_NO_HARDWARE:
-        fprintf(stderr, "No shield is attached to the target.");
+        fprintf(cli_mode ? stderr : stdout, "No shield is attached to the target.");
         break;
     case PGM_ERR_INCORRECT_HARDWARE:
-        fprintf(stderr, "The shield attached to the target does not support this device.");
+        fprintf(cli_mode ? stderr : stdout, "The shield attached to the target does not support this device.");
         break;
     case PGM_ERR_INCORRECT_SWITCH_POSITION:
-        fprintf(stderr, "The selection switch on the target is not in the correct position for this device.");
+        fprintf(cli_mode ? stderr : stdout, "The selection switch on the target is not in the correct position for this device.");
         break;
     case PGM_ERR_MAX_RETRIES_EXCEEDED:
-        fprintf(stderr, "The maximum number of attempt to write a byte to the device was exceeded.");
+        fprintf(cli_mode ? stderr : stdout, "The maximum number of attempt to write a byte to the device was exceeded.");
         break;
     default:
-        fprintf(stderr, "An error ocurred. Error code not set.");
+        fprintf(cli_mode ? stderr : stdout, "An error ocurred. Error code not set.");
         break;
     }
 
-    fprintf(stderr, "\r\n\r\n");
+    if (cli_mode)
+        fprintf(stderr, "\r\n\r\n");
+    else
+        fprintf(stdout, "\r");
+}
+
+static void print_line_prefix(void)
+{
+    printf("\33[2K\rSTATUS: ");
 }
 
 static void print_progress_outline(void)
 {
     _g_segments_printed = 0;
-
     printf("\033[%dC]\r[", PROGRESS_BAR_SEGMENTS + 1);
 }
 
