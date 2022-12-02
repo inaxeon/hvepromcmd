@@ -2,7 +2,7 @@
  *   File:   DESC_TEST_descriptions.c
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   Test description strings
  *
@@ -22,6 +22,8 @@
 
 #include "project.h"
 #include "test.h"
+#include "serial.h"
+#include "pgm.h"
 
 #define TEST_1702A_READ_PON     1
 #define TEST_1702A_READ_CS      2
@@ -41,6 +43,8 @@
 #define TEST_270X_AA            5
 #define TEST_270X_55            6
 #define TEST_270X_DATA          7
+#define TEST_TMS2716_A10_L_CS_H 8
+#define TEST_TMS2716_A10_H_PE_H 9
 
 #define TEST_MCM6876X_PON       1
 #define TEST_MCM6876X_RD        2
@@ -198,8 +202,8 @@
     "\r\n" \
     "24: VCC   = +5V\r\n" \
     "21: VEE   = -5V\r\n" \
-    "19: VDD   = +12V\r\n" \
     "20: CS/PE = +4.2V\r\n" \
+    "19: VDD   = +12V\r\n" \
     "18: VPP   = 0V\r\n"
 
 #define DESC_TEST_270X_RD \
@@ -288,6 +292,32 @@
     "\r\n" \
     "[ 9] [10] [11] [13] [14] [15] [16] [17]\r\n"
 
+#define DESC_TEST_270X_V2_PON \
+    "Connect your multimeter negative(black) probe to pin 12 on the EPROM socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the EPROM socket are within 5 % of the specified values :\r\n" \
+    "\r\n" \
+    "24 : VCC = +5V\r\n" \
+    "21 : VEE = -5V\r\n" \
+    "20 : CS / PE = +5V\r\n" \
+    "19 : VDD = +12V\r\n" \
+    "18 : VPP = 0V\r\n"
+
+#define DESC_TEST_TMS2716_A10_L_CS_H \
+    "Connect your multimeter negative(black) probe to pin 12 on the EPROM socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the EPROM socket are within 5 % of the specified values :\r\n" \
+    "\r\n" \
+    "20 : A10 = 0V\r\n" \
+    "18 : CS / PE = 5V\r\n"
+
+#define DESC_TEST_TMS2716_A10_H_PE_H \
+    "Connect your multimeter negative(black) probe to pin 12 on the EPROM socket.\r\n" \
+    "\r\n" \
+    "Check the following pins on the EPROM socket are within 5 % of the specified values :\r\n" \
+    "\r\n" \
+    "20 : A10 = +5V\r\n" \
+    "24 : VCC = +12V\r\n" \
 
 #define DESC_TEST_MCM6876X_PON \
     "Connect your multimeter negative (black) probe to pin 12 on the EPROM socket.\r\n" \
@@ -295,7 +325,7 @@
     "Check the following pins on the EPROM socket are within 5% of the specified values: \r\n" \
     "\r\n" \
     "24: VCC   = +5V\r\n" \
-    "20: G/VPP = +4.2V\r\n"
+    "20: G/VPP = +4.2V (+5V for V2 shield)\r\n"
 
 #define DESC_TEST_MCM6876X_RD \
     "Connect your multimeter negative (black) probe to pin 12 on the EPROM socket.\r\n" \
@@ -492,53 +522,67 @@
 
 const test_t _g_1702a_tests[] =
 {
-    { TEST_1702A_READ_PON, false, DESC_TEST_1702A_READ_PON },
-    { TEST_1702A_READ_CS, false, DESC_TEST_1702A_READ_CS },
-    { TEST_1702A_READ_AA, false, DESC_TEST_1702A_READ_AA },
-    { TEST_1702A_READ_55, false, DESC_TEST_1702A_READ_55 },
-    { TEST_1702A_READ_DATA, true, DESC_TEST_1702A_READ_DATA },
-    { TEST_1702A_WRITE_PON, false, DESC_TEST_1702A_WRITE_PON },
-    { TEST_1702A_WRITE_PGM, false, DESC_TEST_1702A_WRITE_PGM },
-    { TEST_1702A_WRITE_VDD, false, DESC_TEST_1702A_WRITE_VDD },
-    { TEST_1702A_WRITE_AA, false, DESC_TEST_1702A_WRITE_AA },
-    { TEST_1702A_WRITE_55, false, DESC_TEST_1702A_WRITE_55 },
-    { 0, false, NULL },
+    { C1702A, TEST_1702A_READ_PON, false, DESC_TEST_1702A_READ_PON },
+    { C1702A, TEST_1702A_READ_CS, false, DESC_TEST_1702A_READ_CS },
+    { C1702A, TEST_1702A_READ_AA, false, DESC_TEST_1702A_READ_AA },
+    { C1702A, TEST_1702A_READ_55, false, DESC_TEST_1702A_READ_55 },
+    { C1702A, TEST_1702A_READ_DATA, true, DESC_TEST_1702A_READ_DATA },
+    { C1702A, TEST_1702A_WRITE_PON, false, DESC_TEST_1702A_WRITE_PON },
+    { C1702A, TEST_1702A_WRITE_PGM, false, DESC_TEST_1702A_WRITE_PGM },
+    { C1702A, TEST_1702A_WRITE_VDD, false, DESC_TEST_1702A_WRITE_VDD },
+    { C1702A, TEST_1702A_WRITE_AA, false, DESC_TEST_1702A_WRITE_AA },
+    { C1702A, TEST_1702A_WRITE_55, false, DESC_TEST_1702A_WRITE_55 },
+    { NotSet, 0, false, NULL },
 };
 
-const test_t _g_270x_tests[] =
+const test_t _g_270x_v1_tests[] =
 {
-    { TEST_270X_PON, false, DESC_TEST_270X_PON },
-    { TEST_270X_RD, false, DESC_TEST_270X_RD },
-    { TEST_270X_WR, false, DESC_TEST_270X_WR },
-    { TEST_270X_PE, false, DESC_TEST_270X_PE },
-    { TEST_270X_AA, false, DESC_TEST_270X_AA },
-    { TEST_270X_55, false, DESC_TEST_270X_55 },
-    { TEST_270X_DATA, true, DESC_TEST_270X_DATA },
-    { 0, false, NULL },
+    { C2708, TEST_270X_PON, false, DESC_TEST_270X_PON },
+    { C2708, TEST_270X_RD, false, DESC_TEST_270X_RD },
+    { C2708, TEST_270X_WR, false, DESC_TEST_270X_WR },
+    { C2708, TEST_270X_PE, false, DESC_TEST_270X_PE },
+    { C2708, TEST_270X_AA, false, DESC_TEST_270X_AA },
+    { C2708, TEST_270X_55, false, DESC_TEST_270X_55 },
+    { C2708, TEST_270X_DATA, true, DESC_TEST_270X_DATA },
+    { NotSet, 0, false, NULL },
+};
+
+const test_t _g_270x_v2_tests[] =
+{
+    { C2708, TEST_270X_PON, false, DESC_TEST_270X_V2_PON },
+    { C2708, TEST_270X_RD, false, DESC_TEST_270X_RD },
+    { C2708, TEST_270X_WR, false, DESC_TEST_270X_WR },
+    { C2708, TEST_270X_PE, false, DESC_TEST_270X_PE },
+    { C2708, TEST_270X_AA, false, DESC_TEST_270X_AA },
+    { C2708, TEST_270X_55, false, DESC_TEST_270X_55 },
+    { TMS2716, TEST_TMS2716_A10_L_CS_H, false, DESC_TEST_TMS2716_A10_L_CS_H },
+    { TMS2716, TEST_TMS2716_A10_H_PE_H, false, DESC_TEST_TMS2716_A10_H_PE_H },
+    { C2708, TEST_270X_DATA, true, DESC_TEST_270X_DATA },
+    { NotSet, 0, false, NULL },
 };
 
 const test_t _g_mcm6876x_tests[] =
 {
-    { TEST_MCM6876X_PON, false, DESC_TEST_MCM6876X_PON },
-    { TEST_MCM6876X_RD, false, DESC_TEST_MCM6876X_RD },
-    { TEST_MCM6876X_WR, false, DESC_TEST_MCM6876X_WR },
-    { TEST_MCM6876X_AA, false, DESC_TEST_MCM6876X_AA },
-    { TEST_MCM6876X_55, false, DESC_TEST_MCM6876X_55 },
-    { TEST_MCM6876X_DATA, true, DESC_TEST_MCM6876X_DATA },
-    { 0, false, NULL },
+    { MCM6876X, TEST_MCM6876X_PON, false, DESC_TEST_MCM6876X_PON },
+    { MCM6876X, TEST_MCM6876X_RD, false, DESC_TEST_MCM6876X_RD },
+    { MCM6876X, TEST_MCM6876X_WR, false, DESC_TEST_MCM6876X_WR },
+    { MCM6876X, TEST_MCM6876X_AA, false, DESC_TEST_MCM6876X_AA },
+    { MCM6876X, TEST_MCM6876X_55, false, DESC_TEST_MCM6876X_55 },
+    { MCM6876X, TEST_MCM6876X_DATA, true, DESC_TEST_MCM6876X_DATA },
+    { NotSet, 0, false, NULL },
 };
 
 const test_t _g_mcs48_tests[] =
 {
-    { TEST_MCS48_PON, false, DESC_TEST_MCS48_PON },
-    { TEST_MCS48_VDD_21V, false, DESC_TEST_MCS48_VDD_21V },
-    { TEST_MCS48_VDD_25V, false, DESC_TEST_MCS48_VDD_25V },
-    { TEST_MCS48_EA_12V, false, DESC_TEST_MCS48_EA_12V },
-    { TEST_MCS48_EA_18V, false, DESC_TEST_MCS48_EA_18V },
-    { TEST_MCS48_EA_22V, false, DESC_TEST_MCS48_EA_22V },
-    { TEST_MCS48_PROG, false, DESC_TEST_MCS48_PROG },
-    { TEST_MCS48_AA, false, DESC_TEST_MCS48_AA },
-    { TEST_MCS48_55, false, DESC_TEST_MCS48_55 },
-    { TEST_MCS48_DATA, true, DESC_TEST_MCS48_DATA },
-    { 0, false, NULL },
+    { D8748, TEST_MCS48_PON, false, DESC_TEST_MCS48_PON },
+    { D8748, TEST_MCS48_VDD_21V, false, DESC_TEST_MCS48_VDD_21V },
+    { D8748, TEST_MCS48_VDD_25V, false, DESC_TEST_MCS48_VDD_25V },
+    { D8748, TEST_MCS48_EA_12V, false, DESC_TEST_MCS48_EA_12V },
+    { D8748, TEST_MCS48_EA_18V, false, DESC_TEST_MCS48_EA_18V },
+    { D8748, TEST_MCS48_EA_22V, false, DESC_TEST_MCS48_EA_22V },
+    { D8748, TEST_MCS48_PROG, false, DESC_TEST_MCS48_PROG },
+    { D8748, TEST_MCS48_AA, false, DESC_TEST_MCS48_AA },
+    { D8748, TEST_MCS48_55, false, DESC_TEST_MCS48_55 },
+    { D8748, TEST_MCS48_DATA, true, DESC_TEST_MCS48_DATA },
+    { NotSet, 0, false, NULL },
 };

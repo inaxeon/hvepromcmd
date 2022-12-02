@@ -2,7 +2,7 @@
  *   File:   main.c
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   Main routine
  *
@@ -51,6 +51,17 @@ typedef enum
     Quit
 } test_cmd_t;
 
+typedef enum
+{
+    SHIELD_TYPE_UNKNOWN = -1,
+    SHIELD_TYPE_1702A = 0,
+    SHIELD_TYPE_270X_V1 = 1,
+    SHIELD_TYPE_MCM6876X_V1 = 2,
+    SHIELD_TYPE_270X_V2 = 3,
+    SHIELD_TYPE_MCM6876X_V2 = 4,
+    SHIELD_TYPE_MCS48 = 5,
+} shield_type_t;
+
 int _g_last_error;
 int _g_segments_printed;
 
@@ -61,7 +72,7 @@ static bool target_verify(port_handle_t port, device_type_t dev_type, const char
 static bool target_measure_12v(port_handle_t port, device_type_t dev_type);
 static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *blank);
 static bool work_verify(port_handle_t port, device_type_t dev_type, const char *filename, bool *matches);
-static bool target_test(port_handle_t port, device_type_t dev_type);
+static bool target_test(port_handle_t port, shield_type_t shield_type);
 static void print_progress(int pct);
 static void print_passes(int pass, int num_passes);
 static void print_progress_outline(void);
@@ -85,6 +96,7 @@ int main(int argc, char *argv[])
     char *filename = NULL;
     operation_t operation = None;
     device_type_t dev_type = NotSet;
+    shield_type_t shield_type = SHIELD_TYPE_UNKNOWN;
     port_handle_t port = DEFAULT_PORT_HANDLE;
 
     if (!argv[1] || !strcmp(argv[1], "/?"))
@@ -100,7 +112,7 @@ int main(int argc, char *argv[])
 
     memset(port_name, 0, sizeof(port_name));
 
-    while ((opt = getopt(argc, argv, "o:p:u:d:f:n:r:mbv?")) != -1)
+    while ((opt = getopt(argc, argv, "o:p:u:d:f:n:r:s:mbv?")) != -1)
     {
         switch (opt)
         {
@@ -128,6 +140,8 @@ int main(int argc, char *argv[])
                     dev_type = C2704;
                 else if (!_stricmp(optarg, "2708"))
                     dev_type = C2708;
+                else if (!_stricmp(optarg, "TMS2716"))
+                    dev_type = TMS2716;
                 else if (!_stricmp(optarg, "MCM6876X"))
                     dev_type = MCM6876X;
                 else if (!_stricmp(optarg, "8741"))
@@ -146,11 +160,27 @@ int main(int argc, char *argv[])
                     dev_type = P8050;
                 else if (!_stricmp(optarg, "8755"))
                     dev_type = D8755;
-				else if (!_stricmp(optarg, "8041"))
-					dev_type = P8041;
-				else if (!_stricmp(optarg, "8042"))
-					dev_type = P8042;
+                else if (!_stricmp(optarg, "8041"))
+                    dev_type = P8041;
+                else if (!_stricmp(optarg, "8042"))
+                    dev_type = P8042;
                 break;
+            }
+            case 's':
+            {
+                if (!_stricmp(optarg, "1702A"))
+                    shield_type = SHIELD_TYPE_1702A;
+                else if (!_stricmp(optarg, "270Xv1"))
+                    shield_type = SHIELD_TYPE_270X_V1;
+                else if (!_stricmp(optarg, "MCM6876Xv1"))
+                    shield_type = SHIELD_TYPE_MCM6876X_V1;
+                else if (!_stricmp(optarg, "270Xv2"))
+                    shield_type = SHIELD_TYPE_270X_V2;
+                else if (!_stricmp(optarg, "MCM6876Xv2"))
+                    shield_type = SHIELD_TYPE_MCM6876X_V2;
+                else if (!_stricmp(optarg, "MCS48"))
+                    shield_type = SHIELD_TYPE_MCS48;
+				break;
             }
             case 'p':
             {
@@ -247,50 +277,63 @@ int main(int argc, char *argv[])
         goto out;
     }
     
-    switch (dev_type)
+    if (operation == Test)
     {
-        case C1702A:
+        if (shield_type == SHIELD_TYPE_UNKNOWN)
         {
-            if (!num_passes)
-                num_passes = 32;
-            hit_until_set = false;
-            break;
-        }
-        case C2704:
-        case C2708:
-        {
-            if (!num_passes)
-                num_passes = 100;
-            hit_until_set = false;
-            break;
-        }
-        case D8741:
-        case D8742:
-        case D8748:
-        case D8749:
-        case P8048:
-        case P8049:
-        case P8050:
-        case D8755:
-        {
-            if (!num_passes)
-                num_passes = 1;
-            parameter = 0;
-            break;
-        }
-        case MCM6876X:
-        {
-            if (!num_passes)
-                num_passes = 1;
-            if (!parameter)
-                parameter = 5;
-            break;
-        }
-        default:
-        {
-            fprintf(stderr, "\r\nInvalid or no device type specified.\r\n");
+            fprintf(stderr, "\r\nNo shield type specified.\r\n");
             operation_result = false;
             goto out;
+        }
+    }
+    else
+    {
+        switch (dev_type)
+        {
+            case C1702A:
+            {
+                if (!num_passes)
+                    num_passes = 32;
+                hit_until_set = false;
+                break;
+            }
+            case C2704:
+            case C2708:
+            case TMS2716:
+            {
+                if (!num_passes)
+                    num_passes = 100;
+                hit_until_set = false;
+                break;
+            }
+            case D8741:
+            case D8742:
+            case D8748:
+            case D8749:
+            case P8048:
+            case P8049:
+            case P8050:
+            case D8755:
+            {
+                if (!num_passes)
+                    num_passes = 1;
+                parameter = 0;
+                break;
+            }
+            case MCM6876X:
+            {
+                if (!num_passes)
+                    num_passes = 1;
+                if (!parameter)
+                    parameter = 5;
+                break;
+            }
+            default:
+            {
+                fprintf(stderr, "\r\nInvalid or no device type specified.\r\n");
+                operation_result = false;
+                goto out;
+            }
         }
     }
 
@@ -312,7 +355,7 @@ int main(int argc, char *argv[])
             operation_result = target_measure_12v(port, dev_type);
             break;
         case Test:
-            operation_result = target_test(port, dev_type);
+            operation_result = target_test(port, shield_type);
             break;
         default:
             fprintf(stderr, "\r\nNo operation specified.\r\n");
@@ -342,11 +385,11 @@ static void help(const char *progname)
         "Read device to file:\r\n\r\n"
         "\t%s -o read -p PORT -d DEVICE -f FILE\r\n\r\n"
 #ifdef _WIN32
-        "\tPORT must be in the format COMx\r\n"
+        "\tPORT must be in the format COMxx\r\n"
 #else
-        "\tPORT must be in the format /dev/ttySx\r\n\r\n"
+        "\tPORT must be in the format /dev/ttyXXX\r\n\r\n"
 #endif
-        "\tDEVICE must be one of 1702A/2704/2708/MCM6876X/8748/8749/8741/8742/8048/8049/8050/8755/8041/8042\r\n\r\n"
+        "\tDEVICE must be one of 1702A/2704/2708/TMS2716/MCM6876X/8748/8749/8741/8742/8048/8049/8050/8755/8041/8042\r\n\r\n"
         "Blank check device:\r\n\r\n"
         "\t%s -o blankcheck -p PORT -d DEVICE\r\n\r\n"
         "Write device from file:\r\n\r\n"
@@ -363,7 +406,8 @@ static void help(const char *progname)
         "Verify device against file:\r\n\r\n"
         "\t%s -o verify -p PORT -d DEVICE -f FILE [-b]\r\n\r\n"        
         "Start the hardware test for the shield of a given device type:\r\n\r\n"
-        "\t%s -o test -p PORT -d DEVICE\r\n\r\n",
+        "\t%s -o test -p PORT -s SHIELD_TYPE\r\n"
+        "\tSHIELD_TYPE must be one of 1702A/270Xv1/270Xv2/MCM6876Xv1/MCM6876Xv2/MCS48\r\n\r\n",
         progname, progname, progname, progname, MCM6876X_DEFAULT_RETRIES, progname, progname);
 }
 
@@ -603,7 +647,7 @@ static bool target_measure_12v(port_handle_t port, device_type_t dev_type)
 
     if (dev_type == C2704 || dev_type == C2708)
     {
-        if (measured_voltage < 11.9 || measured_voltage >= 13.0)
+        if (measured_voltage < 11.5 || measured_voltage >= 13.0)
         {
             fprintf(stderr, "\r\nSupply voltage is out of range for this device type.\r\n\r\nVin=%.2fV Min=12.00V Max=13.00V\r\n", measured_voltage);
             return false;
@@ -734,7 +778,8 @@ static bool work_blank_check(port_handle_t port, device_type_t dev_type, bool *b
     return true;
 }
 
-static bool target_test(port_handle_t port, device_type_t dev_type)
+
+static bool target_test(port_handle_t port, shield_type_t shield_type)
 {
     const test_t *tests;
     int testidx;
@@ -742,28 +787,22 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
     int testlast = -1;
     bool run = false;
 
-    switch (dev_type)
+    switch (shield_type)
     {
-        case C1702A:
+        case SHIELD_TYPE_1702A:
             tests = _g_1702a_tests;
             break;
-        case C2704:
-        case C2708:
-            tests = _g_270x_tests;
+        case SHIELD_TYPE_270X_V1:
+            tests = _g_270x_v1_tests;
             break;
-        case MCM6876X:
+        case SHIELD_TYPE_270X_V2:
+            tests = _g_270x_v2_tests;
+            break;
+        case SHIELD_TYPE_MCM6876X_V1:
+        case SHIELD_TYPE_MCM6876X_V2:
             tests = _g_mcm6876x_tests;
             break;
-        case D8741:
-        case D8748:
-        case D8742:
-        case D8749:
-        case P8048:
-        case P8049:
-        case P8050:
-        case D8755:
-		case P8041:
-		case P8042:
+        case SHIELD_TYPE_MCS48:
             tests = _g_mcs48_tests;
             break;
         default:
@@ -777,7 +816,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
     printf("\r\n");
 
-    if (!target_measure_12v(port, dev_type))
+    if (!target_measure_12v(port, tests[0].dev_type))
         return false;
 
 #ifndef _WIN32
@@ -848,7 +887,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
             {
                 if (!run)
                 {
-                    if (!pgm_test(port, dev_type, tests[testidx].index))
+                    if (!pgm_test(port, tests[testidx].dev_type, tests[testidx].index))
                     {
                         print_target_error(false);
                     }
@@ -891,7 +930,7 @@ static bool target_test(port_handle_t port, device_type_t dev_type)
 
                 Sleep(500);
 
-                if (!pgm_test_read(port, dev_type, &data))
+                if (!pgm_test_read(port, tests[testidx].dev_type, &data))
                 {
                     print_target_error(false);
                 }

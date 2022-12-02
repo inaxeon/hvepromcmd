@@ -2,7 +2,7 @@
  *   File:   serial_win32.c
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   Serial routines for Windows
  *

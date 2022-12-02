@@ -2,7 +2,7 @@
  *   File:   test.h
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   This is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,13 +22,15 @@
 
 typedef struct
 {
-	uint8_t index;
-	bool is_read;
-	const char *desc;
+    int dev_type;
+    uint8_t index;
+    bool is_read;
+    const char *desc;
 } test_t;
 
 extern const test_t _g_1702a_tests[];
-extern const test_t _g_270x_tests[];
+extern const test_t _g_270x_v1_tests[];
+extern const test_t _g_270x_v2_tests[];
 extern const test_t _g_mcm6876x_tests[];
 extern const test_t _g_mcs48_tests[];
 

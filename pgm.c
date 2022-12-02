@@ -2,7 +2,7 @@
  *   File:   pgm.c
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   'C' version of IspDevice.cs
  *
@@ -350,18 +350,20 @@ int pgm_get_dev_size(device_type_t device_type)
         return 0x200;
     case C2708:
         return 0x400;
+    case TMS2716:
+        return 0x800;
     case MCM6876X:
         return 0x2000;
     case D8741:
     case D8748:
     case P8048:
-	case P8041:
+    case P8041:
         return 0x400;
     case D8742:
     case D8749:
     case P8049:
     case D8755:
-	case P8042:
+    case P8042:
         return 0x800;
     case P8050:
         return 0x1000;

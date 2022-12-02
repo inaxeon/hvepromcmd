@@ -2,7 +2,7 @@
  *   File:   pgm.h
  *   Author: Matthew Millman (inaxeon@hotmail.com)
  *
- *   1702A/270x/MCM6876x/MCS48 Programmer
+ *   1702A/270x/TMS2716/MCM6876x/MCS48 Programmer
  *
  *   'C' version of IspDevice.cs
  *
@@ -60,8 +60,9 @@ typedef enum
     P8049 = 0x09,
     P8050 = 0x0A,
     D8755 = 0x0B,
-	P8041 = 0x0C,
-	P8042 = 0x0D,
+    P8041 = 0x0C,
+    P8042 = 0x0D,
+    TMS2716 = 0x0E
 } device_type_t;
 
 typedef struct
