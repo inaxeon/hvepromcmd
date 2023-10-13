@@ -419,9 +419,9 @@
     "Check the following pins on the MCU socket are within 5% of the specified values: \r\n" \
     "\r\n" \
     "40: VCC   = +5V\r\n" \
-    " 7: EA    = +5V\r\n" \
-    "25: PROG  = +5V\r\n" \
-    "26: VDD   = +5V\r\n"
+    " 7: EA    = +4.2V\r\n" \
+    "25: PROG  = +4.2V\r\n" \
+    "26: VDD   = +4.2V\r\n"
 
 #define DESC_TEST_MCS48_EA_12V \
     "Connect your multimeter negative (black) probe to pin 20 on the MCU socket.\r\n" \
